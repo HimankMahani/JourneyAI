@@ -1,0 +1,103 @@
+import React from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import './App.css'
+import Header from './components/Header'
+import Hero from './components/Hero'
+import TravelPlanning from './components/TravelPlanning'
+import Footer from './components/Footer'
+import Destinations from './components/Destinations'
+import Planning from './components/Planning.jsx'
+import Booking from './components/Booking'
+import SignIn from './components/SignIn'
+import SignUp from './components/SignUp'
+import ForgotPassword from './components/ForgotPassword'
+import Debug from './components/Debug'
+import ProtectedRoute from './components/ProtectedRoute'
+import { AuthProvider } from './contexts/AuthContext'
+import { TripProvider } from './contexts/TripContext'
+import { Toaster } from 'sonner'
+
+// Create a layout component to avoid repetition
+const Layout = ({ children }) => (
+  <div className="min-h-screen bg-gray-50">
+    <Header />
+    {children}
+    <Footer />
+  </div>
+);
+
+// Create a simple component for "coming soon" pages
+const ComingSoon = ({ title }) => (
+  <div className="p-8 text-center">
+    <h2 className="text-2xl font-bold text-gray-800 mb-4">{title} - Coming Soon</h2>
+    <p className="text-gray-600">We're working hard to bring you this feature!</p>
+  </div>
+);
+
+const HomePage = () => (
+  <>
+    <Hero />
+    <TravelPlanning />
+  </>
+);
+
+const App = () => {
+  return (
+    <Router>
+      <AuthProvider>
+        <TripProvider>
+          <Toaster />
+          <Routes>
+          <Route path="/planning/:tripId" element={
+            <ProtectedRoute>
+              <Layout>
+                <Planning />
+              </Layout>
+            </ProtectedRoute>
+          }/>
+          <Route path="/" element={
+            <Layout>
+              <HomePage />
+            </Layout>
+          }/>
+          <Route path="/destinations" element={
+            <ProtectedRoute>
+              <Layout>
+                <Destinations />
+              </Layout>
+            </ProtectedRoute>
+          }/>
+          <Route path="/bookings" element={
+            <ProtectedRoute>
+              <Layout>
+                <Booking />
+              </Layout>
+            </ProtectedRoute>
+          }/>
+          <Route path="/login" element={
+            <SignIn />
+          }/>
+          <Route path="/signup" element={
+            <SignUp />
+          }/>
+          <Route path="/forgot-password" element={
+            <ForgotPassword />
+          }/>
+          <Route path="/debug" element={
+            <ProtectedRoute>
+              <Layout>
+                <Debug />
+              </Layout>
+            </ProtectedRoute>
+          }/>
+          {/* Catch-all route - redirect to home */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        </TripProvider>
+      </AuthProvider>
+      <Toaster position="top-center" richColors />
+    </Router>
+  )
+}
+
+export default App
