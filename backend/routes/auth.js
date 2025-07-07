@@ -13,7 +13,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // @access  Public
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password, firstName, lastName, location } = req.body;
     
     // Check if user already exists
     let user = await User.findOne({ $or: [{ email }, { username }] });
@@ -26,13 +26,31 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Parse location if provided
+    let locationData = {};
+    if (location) {
+      const locationParts = location.split(',').map(part => part.trim());
+      if (locationParts.length >= 2) {
+        locationData = {
+          city: locationParts[0],
+          country: locationParts[locationParts.length - 1],
+          full: location
+        };
+      } else {
+        locationData = {
+          full: location
+        };
+      }
+    }
+
     // Create new user
     user = new User({
       username,
       email,
       password: hashedPassword,
       firstName,
-      lastName
+      lastName,
+      location: locationData
     });
 
     await user.save();
@@ -51,7 +69,8 @@ router.post('/register', async (req, res) => {
         username: user.username,
         email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        location: user.location
       }
     });
   } catch (error) {

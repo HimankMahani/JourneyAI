@@ -203,9 +203,9 @@ export const tripService = {
     }
   },
 
-  getAIResponseFiles: async (tripId, type = null) => {
+  getAIResponses: async (tripId, type = null) => {
     try {
-      const url = type ? `/generator/ai-files/${tripId}?type=${type}` : `/generator/ai-files/${tripId}`;
+      const url = type ? `/generator/ai-responses/${tripId}?type=${type}` : `/generator/ai-responses/${tripId}`;
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -216,6 +216,24 @@ export const tripService = {
   getAIResponse: async (tripId, type = 'itinerary') => {
     try {
       const response = await api.get(`/generator/ai-response/${tripId}/${type}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
+  getPlacePhoto: async (placeName) => {
+    try {
+      const response = await api.get(`/generator/place-photo/${encodeURIComponent(placeName)}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
+  getPlacePhotos: async (places) => {
+    try {
+      const response = await api.post('/generator/place-photos', { places });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error('Network Error');

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Calendar, ChevronRight, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MapPin, Star, Calendar, ChevronRight, Filter, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useTripContext } from '../contexts/useTripContext';
+import { useAuth } from '../contexts/useAuth';
+import { toast } from 'sonner';
+import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
 
 const destinations = [
   {
@@ -83,6 +88,46 @@ const destinations = [
     activities: ['Adventure', 'Nature', 'Photography'],
     duration: '12-16 days'
   },
+  {
+    id: 9,
+    name: 'Paris, France',
+    description: 'City of Light with iconic landmarks, world-class museums, and romantic atmosphere.',
+    image: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    rating: 4.8,
+    price: '₹1,20,000',
+    activities: ['Culture', 'Food', 'Romance'],
+    duration: '5-7 days'
+  },
+  {
+    id: 10,
+    name: 'Tokyo, Japan',
+    description: 'Modern metropolis blending ancient traditions with cutting-edge technology.',
+    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    rating: 4.7,
+    price: '₹95,000',
+    activities: ['Culture', 'Food', 'Technology'],
+    duration: '6-8 days'
+  },
+  {
+    id: 11,
+    name: 'Dubai, UAE',
+    description: 'Futuristic city with luxury shopping, modern architecture, and desert adventures.',
+    image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    rating: 4.6,
+    price: '₹85,000',
+    activities: ['Luxury', 'Shopping', 'Adventure'],
+    duration: '4-6 days'
+  },
+  {
+    id: 12,
+    name: 'Iceland',
+    description: 'Land of fire and ice with stunning waterfalls, geysers, and Northern Lights.',
+    image: 'https://images.unsplash.com/photo-1539066319246-4ae5e4ca9c97?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    rating: 4.9,
+    price: '₹1,40,000',
+    activities: ['Nature', 'Adventure', 'Photography'],
+    duration: '7-10 days'
+  }
 ];
 
 const regions = [
@@ -99,6 +144,57 @@ const activities = [
 ];
 
 const DestinationCard = ({ destination }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { createTripFromDestination } = useTripContext();
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Check if there's a pre-generated itinerary for this destination
+  const hasPreGeneratedItinerary = preGeneratedItineraries[destination.id];
+
+  const handleViewDetails = async () => {
+    if (!user) {
+      toast.error('Please sign in to create a trip');
+      navigate('/signin');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      console.log('Creating trip for destination:', destination.name);
+      
+      // Create a trip from the destination
+      const tripData = {
+        id: destination.id, // Add destination ID for pre-generated itinerary lookup
+        destination: destination.name,
+        budget: parseInt(destination.price.replace(/[₹,]/g, '')),
+        activities: destination.activities,
+        estimatedDuration: destination.duration,
+        rating: destination.rating,
+        description: destination.description,
+        presetImage: destination.image
+      };
+
+      console.log('Trip data:', tripData);
+      const newTrip = await createTripFromDestination(tripData);
+      console.log('Created trip:', newTrip);
+      
+      if (newTrip) {
+        if (newTrip.generatedBy === 'pre-generated') {
+          toast.success(`Pre-planned itinerary for ${destination.name} loaded successfully!`);
+        } else {
+          toast.success(`Trip to ${destination.name} created successfully!`);
+        }
+        navigate(`/planning/${newTrip._id}`);
+      }
+    } catch (error) {
+      console.error('Error creating trip:', error);
+      toast.error('Failed to create trip. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col h-full">
       <div className="relative h-56 overflow-hidden">
@@ -106,11 +202,20 @@ const DestinationCard = ({ destination }) => {
           src={destination.image} 
           alt={destination.name} 
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+          onError={(e) => {
+            console.error(`Failed to load image for ${destination.name}:`, e.target.src);
+            e.target.src = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+          }}
         />
         <div className="absolute top-3 right-3 bg-white rounded-full px-2 py-1 flex items-center">
           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
           <span className="text-xs font-bold ml-1">{destination.rating}</span>
         </div>
+        {hasPreGeneratedItinerary && (
+          <div className="absolute top-3 left-3 bg-green-500 text-white rounded-full px-2 py-1 flex items-center">
+            <span className="text-xs font-bold">Ready to Go!</span>
+          </div>
+        )}
       </div>
       <div className="p-5 flex flex-col flex-grow">
         <div className="flex items-start justify-between mb-2">
@@ -133,8 +238,22 @@ const DestinationCard = ({ destination }) => {
             <Calendar className="h-4 w-4 mr-1" />
             <span>{destination.duration}</span>
           </div>
-          <Button size="sm" className="flex items-center bg-purple-600 hover:bg-purple-700 text-white rounded-md">
-            View Details <ChevronRight className="h-4 w-4 ml-1" />
+          <Button 
+            size="sm" 
+            className="flex items-center bg-purple-600 hover:bg-purple-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleViewDetails}
+            disabled={isCreating}
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                {hasPreGeneratedItinerary ? 'Loading Itinerary...' : 'Creating...'}
+              </>
+            ) : (
+              <>
+                {hasPreGeneratedItinerary ? 'View Itinerary' : 'Create Trip'} <ChevronRight className="h-4 w-4 ml-1" />
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -145,6 +264,18 @@ const DestinationCard = ({ destination }) => {
 const Destinations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Filter destinations based on search query
+  const filteredDestinations = destinations.filter(destination =>
+    destination.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    destination.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    destination.activities.some(activity => 
+      activity.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const featuredDestinations = filteredDestinations.slice(0, 8);
+  const moreDestinations = filteredDestinations.slice(8, 12);
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -237,26 +368,37 @@ const Destinations = () => {
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {destinations.slice(0, 4).map(destination => (
+          {featuredDestinations.map(destination => (
             <DestinationCard key={destination.id} destination={destination} />
           ))}
         </div>
       </div>
 
-      {/* Popular Destinations Section */}
-      <div>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Popular Destinations</h2>
-          <Button variant="link" className="text-purple-600 hover:text-purple-700 flex items-center">
-            View all <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+      {/* More Destinations Section */}
+      {moreDestinations.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">More Amazing Destinations</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {moreDestinations.map(destination => (
+              <DestinationCard key={destination.id} destination={destination} />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {destinations.slice(4, 8).map(destination => (
-            <DestinationCard key={destination.id} destination={destination} />
-          ))}
+      )}
+
+      {/* No results message */}
+      {filteredDestinations.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-500 text-lg">
+            No destinations found matching "{searchQuery}"
+          </div>
+          <div className="text-gray-400 text-sm mt-2">
+            Try adjusting your search terms or browse all destinations
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

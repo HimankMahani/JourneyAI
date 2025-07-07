@@ -149,13 +149,13 @@
   border-left: 4px solid #e74c3c;
 }
 
-.files-list {
+.response-list {
   border: 2px solid #ecf0f1;
   border-radius: 6px;
   overflow: hidden;
 }
 
-.file-item {
+.response-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -164,22 +164,22 @@
   background: white;
 }
 
-.file-item:last-child {
+.response-item:last-child {
   border-bottom: none;
 }
 
-.file-item:hover {
+.response-item:hover {
   background: #f8f9fa;
 }
 
-.file-name {
+.response-name {
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 0.9rem;
   color: #2c3e50;
   flex: 1;
 }
 
-.file-info {
+.response-info {
   font-size: 0.9rem;
   color: #7f8c8d;
   font-weight: 600;

@@ -1,74 +1,148 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { useTripContext } from '../contexts/useTripContext'
+import TripCard from './TripCard'
 import AIButton from './ui/ai-button';
-import { Calendar, MapIcon, Backpack, Download, Share2, Edit3, Phone, AlertTriangle, Hotel, Globe, Search } from 'lucide-react';
+import { Calendar, MapIcon, Backpack, Users, IndianRupee, Search, Edit3 } from 'lucide-react';
 
 const Booking = () => {
-    const sampleTrips = [
-        {
-          id: 1,
-          destination: "Paris, France",
-          dates: "July 15-22, 2024",
-          travelers: 2,
-          budget: "₹1,50,000",
-          status: "upcoming",
-          image: "https://images.unsplash.com/photo-1499856871958-5b9357976b82?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
-        },
-        {
-          id: 2,
-          destination: "Bali, Indonesia",
-          dates: "September 5-15, 2024",
-          travelers: 3,
-          budget: "₹2,20,000",
-          status: "planning",
-          image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1738&q=80"
-        }
-      ];
+  const { trips, loading } = useTripContext();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Helper function to extract destination name from object or string
+  const getDestinationName = (destination) => {
+    if (!destination) return '';
+    if (typeof destination === 'string') return destination;
+    if (typeof destination === 'object' && destination.name) return destination.name;
+    return '';
+  };
+
+  // Helper function to extract budget amount from object or number
+  const getBudgetAmount = (budget) => {
+    if (!budget) return null;
+    if (typeof budget === 'number') return budget;
+    if (typeof budget === 'object' && budget.amount) return budget.amount;
+    return null;
+  };
+
+  // Filter trips based on search term
+  const filteredTrips = useMemo(() => {
+    if (!searchTerm) return trips;
+    return trips.filter(trip => {
+      const title = trip.title || '';
+      const destination = getDestinationName(trip.destination);
+      const searchLower = searchTerm.toLowerCase();
+      
+      return (typeof title === 'string' && title.toLowerCase().includes(searchLower)) ||
+             (typeof destination === 'string' && destination.toLowerCase().includes(searchLower));
+    });
+  }, [trips, searchTerm]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Date not set';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed': return 'text-green-600 bg-green-100';
+      case 'in-progress': return 'text-blue-600 bg-blue-100';
+      case 'planning': return 'text-yellow-600 bg-yellow-100';
+      case 'cancelled': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10 px-4 md:px-40">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700"></div>
+            <p className="text-gray-600">Loading your trips...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
       
   return (
-    <div className="container mx-auto py-10 px-40">
+    <div className="container mx-auto py-10 px-4 md:px-40">
       {/* Header with title and create button */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 py-5">
         <div className="mb-6 md:mb-0">
           <h1 className="text-4xl font-bold mb-2">My Trips</h1>
           <p className="text-lg text-gray-600">Plan, organize, and track your travel adventures</p>
         </div>
-        <AIButton 
-          className="flex items-center gap-2 px-6 py-3"
-        >
-          <span>Create a new Trip</span>
-        </AIButton>
+        <Link to="/">
+          <AIButton 
+            className="flex items-center gap-2 px-6 py-3"
+          >
+            <span>Create a new Trip</span>
+          </AIButton>
+        </Link>
       </div>
 
-<div className="relative">
-  <Search className="text-gray-500 absolute top-3 left-3 size-4.5" />
-  <input 
-    type="text" 
-    placeholder="Search trips by name or destinations..." 
-    className="border rounded-lg p-2 pl-10 w-full mb-10" 
-  />
-</div>
+      {/* Search bar */}
+      <div className="relative mb-8">
+        <Search className="text-gray-500 absolute top-3 left-3 size-4.5" />
+        <input 
+          type="text" 
+          placeholder="Search trips by name or destinations..." 
+          className="border rounded-lg p-2 pl-10 w-full" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
 
       {/* Trip cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {sampleTrips.map((trip) => (
-          <div key={trip.id} className="border rounded-lg overflow-hidden shadow-md">
-            <img src={trip.image} alt={trip.destination} className="w-full h-48 object-cover" />
-            <div className="p-4">
-              <h2 className="text-xl font-semibold">{trip.destination}</h2>
-              <p className="text-gray-600">{trip.dates}</p>
-              <p className="text-gray-600">Travelers: {trip.travelers}</p>
-              <p className="text-gray-600">Budget: {trip.budget}</p>
-              <p className={`text-sm font-medium ${trip.status === "upcoming" ? "text-green-500" : "text-yellow-500"}`}>
-                Status: {trip.status}
-              </p>
-              <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-                View Details
-              </button>
-            </div>
+      {filteredTrips.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="mb-4">
+            <Backpack className="mx-auto h-12 w-12 text-gray-400" />
           </div>
-        ))}
-      </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {trips.length === 0 ? 'No trips yet' : 'No trips found'}
+          </h3>
+          <p className="text-gray-500 mb-6">
+            {trips.length === 0 
+              ? 'Start planning your next adventure!' 
+              : 'Try adjusting your search terms.'
+            }
+          </p>
+          {trips.length === 0 && (
+            <Link to="/">
+              <AIButton className="inline-flex items-center gap-2 px-6 py-3">
+                <span>Plan Your First Trip</span>
+              </AIButton>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTrips.map((trip) => (
+            <TripCard 
+              key={trip._id}
+              trip={trip}
+              formatDate={formatDate}
+              getStatusColor={getStatusColor}
+              getDestinationName={getDestinationName}
+              getBudgetAmount={getBudgetAmount}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

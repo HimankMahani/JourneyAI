@@ -46,7 +46,6 @@ const App = () => {
     <Router>
       <AuthProvider>
         <TripProvider>
-          <Toaster />
           <Routes>
           <Route path="/planning/:tripId" element={
             <ProtectedRoute>
@@ -67,13 +66,15 @@ const App = () => {
               </Layout>
             </ProtectedRoute>
           }/>
-          <Route path="/bookings" element={
+          <Route path="/my-trips" element={
             <ProtectedRoute>
               <Layout>
                 <Booking />
               </Layout>
             </ProtectedRoute>
           }/>
+          {/* Redirect old bookings route to new my-trips route */}
+          <Route path="/bookings" element={<Navigate to="/my-trips" />} />
           <Route path="/login" element={
             <SignIn />
           }/>

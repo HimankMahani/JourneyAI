@@ -34,9 +34,17 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
       if (day.activities && Array.isArray(day.activities)) {
         day.activities.forEach(activity => {
           if (activity.cost) {
-            // Extract numeric value from cost string (e.g., "₹2,500" -> 2500)
-            const costStr = activity.cost.replace(/[^\d]/g, '');
-            const cost = parseInt(costStr, 10);
+            let cost = 0;
+            
+            // Handle both numeric and string cost values
+            if (typeof activity.cost === 'number') {
+              cost = activity.cost;
+            } else if (typeof activity.cost === 'string') {
+              // Extract numeric value from cost string (e.g., "₹2,500" -> 2500)
+              const costStr = activity.cost.replace(/[^\d]/g, '');
+              cost = parseInt(costStr, 10);
+            }
+            
             if (!isNaN(cost)) {
               totalCost += cost;
             }

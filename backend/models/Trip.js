@@ -59,18 +59,23 @@ const tripSchema = new mongoose.Schema({
   },
   itinerary: [{
     day: Number,
+    title: String, // Add title for the day
     date: Date,
     activities: [{
+      time: String, // Activity time (e.g., "10:00 AM")
+      activity: String, // Activity name/title
+      location: String, // Location name
+      description: String, // Activity description
+      cost: Number, // Activity cost
+      category: String, // Activity category (simplified)
+      // Legacy fields for backward compatibility
       title: String,
-      description: String,
       type: {
         type: String,
         enum: ['sightseeing', 'food', 'accommodation', 'transportation', 'activity', 'nightlife', 'other']
       },
-      time: String,
       duration: String,
-      cost: String,
-      location: {
+      locationDetails: {
         name: String,
         address: String,
         coordinates: {
@@ -81,11 +86,7 @@ const tripSchema = new mongoose.Schema({
       },
       startTime: String,
       endTime: String,
-      notes: String,
-      category: {
-        type: String,
-        enum: ['sightseeing', 'food', 'accommodation', 'transportation', 'activity', 'nightlife', 'other']
-      }
+      notes: String
     }]
   }],
   accommodation: [{
@@ -138,7 +139,32 @@ const tripSchema = new mongoose.Schema({
       type: String,
       enum: ['itinerary', 'activity', 'general', 'food', 'safety']
     }
-  }]
+  }],
+  travelers: {
+    type: Number,
+    default: 1
+  },
+  duration: {
+    type: Number, // in days
+    default: 7
+  },
+  status: {
+    type: String,
+    enum: ['planning', 'confirmed', 'in-progress', 'completed', 'cancelled'],
+    default: 'planning'
+  },
+  activities: [{
+    type: String
+  }],
+  // New fields for pre-generated itineraries
+  generatedBy: {
+    type: String,
+    enum: ['ai', 'pre-generated', 'manual'],
+    default: 'ai'
+  },
+  estimatedCost: {
+    type: Number
+  }
 }, {
   timestamps: true
 });

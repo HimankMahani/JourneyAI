@@ -64,7 +64,14 @@ const ActivityCard = ({
             </div>
             <div className="flex items-center space-x-2 bg-gradient-to-r from-green-100 to-emerald-100 px-4 py-2 rounded-full">
               <IndianRupee className="h-4 w-4 text-green-600" />
-              <span className="font-bold text-green-700">{activity.cost || 'Cost TBD'}</span>
+              <span className="font-bold text-green-700">
+                {activity.cost 
+                  ? (typeof activity.cost === 'number' 
+                    ? `₹${activity.cost.toLocaleString()}` 
+                    : activity.cost)
+                  : 'Cost TBD'
+                }
+              </span>
             </div>
           </div>
           <h4 className="font-bold text-gray-900 text-xl">{activity.title || 'Untitled Activity'}</h4>

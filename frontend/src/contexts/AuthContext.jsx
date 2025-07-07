@@ -44,7 +44,8 @@ export const AuthProvider = ({ children }) => {
         email: userData.email,
         password: userData.password,
         firstName: userData.firstName,
-        lastName: userData.lastName
+        lastName: userData.lastName,
+        location: userData.location
       };
       
       const data = await authService.register(backendUserData);

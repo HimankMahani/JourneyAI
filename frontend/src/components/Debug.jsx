@@ -3,12 +3,13 @@ import { useTripContext } from '../contexts/useTripContext';
 import './Debug.css';
 
 const Debug = () => {
+  const tripContext = useTripContext();
   const { 
-    trips, 
+    trips = [], 
     getStorageStats, 
-    getAIResponseFiles, 
+    getAIResponses, 
     reparseItinerary 
-  } = useTripContext();
+  } = tripContext || {};
   
   const [storageStats, setStorageStats] = useState(null);
   const [selectedTrip, setSelectedTrip] = useState('');
@@ -16,12 +17,11 @@ const Debug = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Load storage stats on mount
-  useEffect(() => {
-    loadStorageStats();
-  }, [loadStorageStats]);
-
   const loadStorageStats = useCallback(async () => {
+    if (!getStorageStats) {
+      console.warn('getStorageStats is not available yet');
+      return;
+    }
     try {
       const result = await getStorageStats();
       if (result.success) {
@@ -32,17 +32,22 @@ const Debug = () => {
     }
   }, [getStorageStats]);
 
+  // Load storage stats on mount
+  useEffect(() => {
+    loadStorageStats();
+  }, [loadStorageStats]);
+
   const loadAIFiles = async (tripId) => {
-    if (!tripId) return;
+    if (!tripId || !getAIResponses) return;
     
     try {
       setLoading(true);
-      const result = await getAIResponseFiles(tripId);
+      const result = await getAIResponses(tripId);
       if (result.success) {
-        setAiFiles(result.data.files || []);
+        setAiFiles(result.data.responses || []);
       }
     } catch (error) {
-      console.error('Failed to load AI files:', error);
+      console.error('Failed to load AI responses:', error);
       setAiFiles([]);
     } finally {
       setLoading(false);
@@ -50,16 +55,16 @@ const Debug = () => {
   };
 
   const handleReparseItinerary = async (tripId) => {
-    if (!tripId) return;
+    if (!tripId || !reparseItinerary) return;
     
     try {
       setLoading(true);
-      setMessage('Reparsing itinerary from stored file...');
+      setMessage('Reparsing itinerary from stored MongoDB document...');
       
       const result = await reparseItinerary(tripId);
       if (result.success) {
         setMessage('✅ Itinerary reparsed successfully!');
-        await loadAIFiles(tripId); // Refresh file list
+        await loadAIFiles(tripId); // Refresh response list
       } else {
         setMessage(`❌ Failed to reparse: ${result.error}`);
       }
@@ -79,7 +84,7 @@ const Debug = () => {
 
   return (
     <div className="debug-panel">
-      <h2>🔧 File Storage Debug Panel</h2>
+      <h2>🔧 MongoDB Storage Debug Panel</h2>
       
       {/* Storage Statistics */}
       <div className="debug-section">
@@ -87,16 +92,20 @@ const Debug = () => {
         {storageStats ? (
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-label">Total Files:</span>
-              <span className="stat-value">{storageStats.totalFiles}</span>
+              <span className="stat-label">Total Records:</span>
+              <span className="stat-value">{storageStats.totalResponses}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Total Size:</span>
               <span className="stat-value">{storageStats.totalSizeMB} MB</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Storage Directory:</span>
-              <span className="stat-value small">{storageStats.storageDir}</span>
+              <span className="stat-label">Storage Type:</span>
+              <span className="stat-value small">{storageStats.storageType}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Collection:</span>
+              <span className="stat-value small">{storageStats.collectionName}</span>
             </div>
           </div>
         ) : (
@@ -149,22 +158,24 @@ const Debug = () => {
       {/* AI Files List */}
       {selectedTrip && (
         <div className="debug-section">
-          <h3>📁 AI Response Files</h3>
+          <h3>📁 AI Response Records</h3>
           {loading ? (
-            <p>Loading files...</p>
+            <p>Loading responses...</p>
           ) : aiFiles.length > 0 ? (
-            <div className="files-list">
-              {aiFiles.map((file, index) => (
-                <div key={index} className="file-item">
-                  <span className="file-name">{file}</span>
-                  <span className="file-info">
-                    {file.includes('itinerary') ? '📋 Itinerary' : '💡 Tips'}
+            <div className="response-list">
+              {aiFiles.map((response, index) => (
+                <div key={index} className="response-item">
+                  <span className="response-name">
+                    {response.type} - {new Date(response.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="response-info">
+                    {response.type === 'itinerary' ? '📋 Itinerary' : '💡 Tips'} • {(response.size / 1024).toFixed(1)}KB
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p>No AI response files found for this trip.</p>
+            <p>No AI response records found for this trip.</p>
           )}
         </div>
       )}
@@ -175,8 +186,8 @@ const Debug = () => {
         <ol className="instructions">
           <li>Create a new trip using the AI generator</li>
           <li>Select the trip from the dropdown above</li>
-          <li>View the AI response files that were created</li>
-          <li>Use "Reparse Itinerary" to reprocess the stored AI response</li>
+          <li>View the AI response records that were created in MongoDB</li>
+          <li>Use "Reparse Itinerary" to reprocess the stored AI response from MongoDB</li>
           <li>Check that the itinerary is correctly parsed and displayed</li>
         </ol>
       </div>

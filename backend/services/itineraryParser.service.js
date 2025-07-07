@@ -47,7 +47,73 @@ export const parseItineraryJSON = (jsonText, startDate) => {
     console.log('Extracted JSON length:', jsonOnly.length);
     console.log('JSON preview:', jsonOnly.substring(0, 200) + '...');
     
-    const parsedData = JSON.parse(jsonOnly);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonOnly);
+    } catch (parseError) {
+      console.error('JSON parsing failed, attempting to fix truncated JSON:', parseError.message);
+      
+      // Try to fix common truncation issues
+      let fixedJson = jsonOnly.trim();
+      
+      // If the JSON ends mid-object, try to close it properly
+      if (!fixedJson.endsWith(']')) {
+        // Count open braces and brackets to determine what needs closing
+        let openBraces = 0;
+        let openBrackets = 0;
+        let inString = false;
+        let escaped = false;
+        
+        for (let i = 0; i < fixedJson.length; i++) {
+          const char = fixedJson[i];
+          
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escaped = true;
+            continue;
+          }
+          
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{') openBraces++;
+            else if (char === '}') openBraces--;
+            else if (char === '[') openBrackets++;
+            else if (char === ']') openBrackets--;
+          }
+        }
+        
+        console.log('Open braces:', openBraces, 'Open brackets:', openBrackets);
+        
+        // Close any open objects/arrays
+        while (openBraces > 0) {
+          fixedJson += '}';
+          openBraces--;
+        }
+        while (openBrackets > 0) {
+          fixedJson += ']';
+          openBrackets--;
+        }
+        
+        console.log('Attempting to parse fixed JSON...');
+        try {
+          parsedData = JSON.parse(fixedJson);
+          console.log('Successfully parsed fixed JSON');
+        } catch (fixError) {
+          console.error('Failed to parse fixed JSON:', fixError.message);
+          throw new Error(`JSON parsing failed even after attempted fix: ${parseError.message}`);
+        }
+      } else {
+        throw parseError;
+      }
+    }
     
     // Validate and normalize the parsed data
     if (!Array.isArray(parsedData)) {
@@ -283,26 +349,26 @@ export const categorizeActivity = (activityText) => {
 };
 
 /**
- * Parse AI response from stored file data
- * @param {Object} storedData - The data retrieved from file storage
+ * Parse AI response from stored MongoDB data
+ * @param {Object} storedData - The AIResponse document from MongoDB
  * @param {string} startDate - The start date of the trip
  * @returns {Array} - Parsed itinerary array
  */
 export const parseStoredAIResponse = (storedData, startDate) => {
-  if (!storedData || !storedData.response) {
+  if (!storedData || !storedData.rawResponse) {
     console.error('No stored AI response data found');
     return [];
   }
   
   try {
     // Try JSON parsing first (preferred method)
-    return parseItineraryJSON(storedData.response, startDate);
+    return parseItineraryJSON(storedData.rawResponse, startDate);
   } catch (jsonError) {
     console.error('JSON parsing failed, trying text parsing:', jsonError.message);
     
     try {
       // Fall back to text parsing
-      return parseItineraryText(storedData.response, startDate);
+      return parseItineraryText(storedData.rawResponse, startDate);
     } catch (textError) {
       console.error('Text parsing also failed:', textError.message);
       return [];

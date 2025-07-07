@@ -20,8 +20,9 @@ dist-ssr
 .env.production
 .env.staging
 
-# Backend storage files
-backend/storage/ai-responses/
+# Backend cache and temporary files
+*.cache
+.tmp
 
 # Coverage reports
 coverage/

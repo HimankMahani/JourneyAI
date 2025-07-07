@@ -35,6 +35,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     sparse: true
   },
+  location: {
+    city: {
+      type: String,
+      trim: true
+    },
+    country: {
+      type: String,
+      trim: true
+    },
+    full: {
+      type: String,
+      trim: true
+    }
+  },
   preferences: {
     travelStyle: {
       type: String,

@@ -12,7 +12,7 @@ const Header = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Destinations', href: '/destinations' },
-    { name: 'Bookings', href: '/bookings' },
+    { name: 'My Trips', href: '/my-trips' },
   ];
 
   const isActive = (href) => location.pathname === href;

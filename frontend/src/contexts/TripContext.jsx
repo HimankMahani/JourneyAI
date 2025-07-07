@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 import { tripService } from '@/services/api';
 import { useAuth } from './useAuth';
+import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
 
 const TripContext = createContext();
 
@@ -170,15 +171,91 @@ export const TripProvider = ({ children }) => {
     }
   }, []);
 
-  const getAIResponseFiles = useCallback(async (tripId, type = null) => {
+  const getAIResponses = useCallback(async (tripId, type = null) => {
     try {
-      const response = await tripService.getAIResponseFiles(tripId, type);
+      const response = await tripService.getAIResponses(tripId, type);
       return { success: true, data: response };
     } catch (err) {
-      console.error('Error getting AI response files:', err);
-      return { success: false, error: err.message || 'Failed to get AI response files' };
+      console.error('Error getting AI responses:', err);
+      return { success: false, error: err.message || 'Failed to get AI responses' };
     }
   }, []);
+
+  const createTripFromDestination = useCallback(async (destinationData) => {
+    try {
+      setLoading(true);
+      
+      // Check if we have a pre-generated itinerary for this destination
+      const preGeneratedItinerary = preGeneratedItineraries[destinationData.id];
+      
+      if (preGeneratedItinerary) {
+        // Use pre-generated itinerary
+        const tripData = {
+          destination: destinationData.destination,
+          budget: destinationData.budget,
+          travelers: 2, // Default
+          duration: parseInt(preGeneratedItinerary.duration.split(' ')[0]), // Extract number from "7 days"
+          title: `Trip to ${destinationData.destination}`,
+          status: 'planning',
+          itinerary: preGeneratedItinerary.itinerary,
+          estimatedCost: preGeneratedItinerary.budget,
+          generatedBy: 'pre-generated'
+        };
+        
+        // Create trip with pre-generated itinerary
+        const newTrip = await tripService.createTrip(tripData);
+        setTrips(prev => [...prev, newTrip]);
+        return newTrip;
+      } else {
+        // Fallback to AI generation for destinations without pre-generated itineraries
+        const basicTripData = {
+          destination: destinationData.destination,
+          budget: destinationData.budget,
+          travelers: 2, // Default
+          duration: 7, // Default
+          title: `Trip to ${destinationData.destination}`,
+          status: 'planning'
+        };
+        
+        const tripResult = await createTrip(basicTripData);
+        
+        if (!tripResult.success) {
+          throw new Error(tripResult.error);
+        }
+        
+        const newTrip = tripResult.data;
+        
+        // Generate AI itinerary for this destination
+        const aiPreferences = {
+          destination: destinationData.destination,
+          budget: destinationData.budget,
+          travelers: 2,
+          duration: 7,
+          activities: destinationData.activities || [],
+          description: destinationData.description,
+          rating: destinationData.rating
+        };
+        
+        // Generate the itinerary
+        const itineraryResult = await generateAIItinerary(aiPreferences);
+        
+        if (itineraryResult.success && itineraryResult.data.trip) {
+          // Return the updated trip with itinerary
+          return itineraryResult.data.trip;
+        } else {
+          // Return the basic trip even if itinerary generation fails
+          console.warn('Itinerary generation failed, returning basic trip');
+          return newTrip;
+        }
+      }
+      
+    } catch (err) {
+      console.error('Error creating trip from destination:', err);
+      throw new Error(err.message || 'Failed to create trip from destination');
+    } finally {
+      setLoading(false);
+    }
+  }, [createTrip, generateAIItinerary]);
 
   // useEffect should come after all function definitions to avoid reference errors
   useEffect(() => {
@@ -209,7 +286,8 @@ export const TripProvider = ({ children }) => {
     regenerateTripItinerary,
     reparseItinerary,
     getStorageStats,
-    getAIResponseFiles
+    getAIResponses,
+    createTripFromDestination
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

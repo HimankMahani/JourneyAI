@@ -10,6 +10,7 @@ import PackingTab from '@/components/planning/tabs/PackingTab';
 import DestinationInfoTab from '@/components/planning/tabs/DestinationInfoTab';
 import OverviewTab from '@/components/planning/tabs/OverviewTab';
 import { toast } from 'sonner';
+import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
 
 // Use mock data as fallback or for development
 import {
@@ -33,15 +34,50 @@ const normalizeItinerary = (itinerary) => {
   return itinerary.map(day => ({
     ...day,
     activities: (day.activities || []).map(activity => ({
-      title: activity.title || activity.name || 'Activity',
+      title: activity.title || activity.name || activity.activity || 'Activity',
       description: activity.description || '',
       type: activity.type || activity.category || 'activity',
       time: activity.time || activity.startTime || '09:00',
       duration: activity.duration || '1 hour',
-      cost: activity.cost || '₹0',
-      location: activity.location || { name: 'TBD' }
+      cost: activity.cost || 0, // Keep as number for TripHeader to handle
+      location: activity.location || { name: activity.location || 'TBD' }
     }))
   }));
+};
+
+// Function to get destination ID from destination name
+const getDestinationId = (destinationName) => {
+  console.log('Planning: Looking for destination ID for:', destinationName);
+  
+  const destinations = [
+    { id: 1, name: 'Bali, Indonesia' },
+    { id: 2, name: 'Santorini, Greece' },
+    { id: 3, name: 'Kyoto, Japan' },
+    { id: 4, name: 'Amalfi Coast, Italy' },
+    { id: 5, name: 'Rajasthan, India' },
+    { id: 6, name: 'Machu Picchu, Peru' },
+    { id: 7, name: 'Maldives' },
+    { id: 8, name: 'New Zealand' },
+    { id: 9, name: 'Paris, France' },
+    { id: 10, name: 'Tokyo, Japan' },
+    { id: 11, name: 'Dubai, UAE' },
+    { id: 12, name: 'Iceland' }
+  ];
+  
+  const destination = destinations.find(d => 
+    d.name.toLowerCase() === destinationName.toLowerCase() ||
+    destinationName.toLowerCase().includes(d.name.toLowerCase()) ||
+    d.name.toLowerCase().includes(destinationName.toLowerCase())
+  );
+  
+  console.log('Planning: Found destination:', destination);
+  return destination ? destination.id : null;
+};
+
+// Function to get pre-generated itinerary for a destination
+const getPreGeneratedItinerary = (destinationName) => {
+  const destinationId = getDestinationId(destinationName);
+  return destinationId ? preGeneratedItineraries[destinationId] : null;
 };
 
 const Planning = () => {
@@ -116,9 +152,22 @@ const Planning = () => {
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (isLoading && !currentTrip && !tripLoaded) {
-        console.log('Planning: Loading timeout, falling back to mock data');
-        setItinerary(normalizeItinerary(mockItinerary));
-        setTrip(mockTrip);
+        console.log('Planning: Loading timeout, using fallback data');
+        
+        // Try to determine the destination from URL or use mock data
+        const urlPath = window.location.pathname;
+        let fallbackItinerary = mockItinerary;
+        let fallbackTrip = mockTrip;
+        
+        // If we're in a planning page, try to extract destination info from URL context
+        if (urlPath.includes('/planning/')) {
+          // For now, use mock data, but in future could extract from localStorage or other sources
+          fallbackItinerary = mockItinerary;
+          fallbackTrip = mockTrip;
+        }
+        
+        setItinerary(normalizeItinerary(fallbackItinerary));
+        setTrip(fallbackTrip);
         setPackingList(mockPackingList);
         setDestinationInfo(mockDestinationInfo);
         setIsLoading(false);
@@ -148,15 +197,37 @@ const Planning = () => {
           console.log('Planning: Using real itinerary from trip');
           setItinerary(normalizeItinerary(currentTrip.itinerary));
         } else {
-          console.log('Planning: Trip has no itinerary, using mock data (but will offer to generate real itinerary)');
-          setItinerary(normalizeItinerary(mockItinerary));
+          console.log('Planning: Trip has no itinerary, checking for pre-generated itinerary');
           
-          // Show a toast suggesting to generate itinerary for this trip
-          setTimeout(() => {
-            toast.info('This trip doesn\'t have an AI-generated itinerary. Click "Regenerate" to create one!', {
-              duration: 8000
-            });
-          }, 1000);
+          // Try to get pre-generated itinerary for this destination
+          const destinationName = currentTrip.destination?.name || currentTrip.destination || '';
+          console.log('Planning: Destination name from trip:', destinationName);
+          
+          const preGeneratedItinerary = getPreGeneratedItinerary(destinationName);
+          console.log('Planning: Pre-generated itinerary found:', !!preGeneratedItinerary);
+          
+          if (preGeneratedItinerary) {
+            console.log('Planning: Using pre-generated itinerary for:', destinationName);
+            console.log('Planning: Pre-generated itinerary has', preGeneratedItinerary.itinerary.length, 'days');
+            setItinerary(normalizeItinerary(preGeneratedItinerary.itinerary));
+            
+            // Show a toast about using pre-generated itinerary
+            setTimeout(() => {
+              toast.success(`Using pre-planned itinerary for ${destinationName}!`, {
+                duration: 5000
+              });
+            }, 1000);
+          } else {
+            console.log('Planning: No pre-generated itinerary found, using mock data');
+            setItinerary(normalizeItinerary(mockItinerary));
+            
+            // Show a toast suggesting to generate itinerary for this trip
+            setTimeout(() => {
+              toast.info('This trip doesn\'t have an AI-generated itinerary. Click "Regenerate" to create one!', {
+                duration: 8000
+              });
+            }, 1000);
+          }
         }
         
         setPackingList(currentTrip.packingList || mockPackingList);
@@ -171,7 +242,17 @@ const Planning = () => {
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
           setItinerary(normalizeItinerary(currentTrip.itinerary));
         } else {
-          setItinerary(normalizeItinerary(mockItinerary));
+          // Try to get pre-generated itinerary for this destination
+          const destinationName = currentTrip.destination?.name || currentTrip.destination || '';
+          const preGeneratedItinerary = getPreGeneratedItinerary(destinationName);
+          
+          if (preGeneratedItinerary) {
+            console.log('Planning: Using pre-generated itinerary for:', destinationName);
+            setItinerary(normalizeItinerary(preGeneratedItinerary.itinerary));
+          } else {
+            console.log('Planning: No pre-generated itinerary found, using mock data');
+            setItinerary(normalizeItinerary(mockItinerary));
+          }
         }
         
         setPackingList(currentTrip.packingList || mockPackingList);

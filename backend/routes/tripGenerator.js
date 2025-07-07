@@ -2,19 +2,26 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { auth } from '../middleware/auth.js';
 import Trip from '../models/Trip.js';
+import User from '../models/User.js';
 import { generateTravelItinerary, generateLocalTips } from '../services/ai.service.js';
 import { 
   storeAIResponse, 
   retrieveAIResponse, 
-  listAIResponseFiles,
+  listAIResponses,
   getStorageStats,
   cleanupOldAIResponses 
-} from '../services/fileStorage.service.js';
+} from '../services/aiResponse.service.js';
 import { 
   parseStoredAIResponse, 
   validateItinerary, 
   normalizeItinerary 
 } from '../services/itineraryParser.service.js';
+import { 
+  searchPlacePhotos, 
+  getCachedPlacePhoto,
+  getDestinationImage,
+  clearPhotoCache 
+} from '../services/places.service.js';
 
 // Ensure environment variables are loaded
 dotenv.config();
@@ -132,19 +139,28 @@ router.post('/itinerary', auth, async (req, res) => {
       });
     }
 
-    // Step 1: Generate travel itinerary using Gemini API
+    // Fetch user information including location
+    const user = await User.findById(req.userId);
+    const userLocation = user?.location || null;
+
+    // Step 1: Generate travel itinerary using Gemini API with user location
     let generatedItinerary;
     let generatedLocalTips;
     
     try {
       console.log('Generating itinerary for destination:', destination);
+      if (userLocation?.full) {
+        console.log('Including user location in generation:', userLocation.full);
+      }
+      
       generatedItinerary = await generateTravelItinerary({
         destination,
         startDate,
         endDate,
         interests,
-        budget
-      });
+        budget,
+        travelers
+      }, userLocation);
       console.log('Itinerary generated successfully');
       
       // Step 2: Generate local tips
@@ -194,10 +210,11 @@ router.post('/itinerary', auth, async (req, res) => {
 
     console.log('Created trip with ID:', tripId);
 
-    // Step 4: Store the AI response in file storage
+    // Step 4: Store the AI response in MongoDB
     try {
-      const itineraryFilename = await storeAIResponse(
+      const itineraryResponse = await storeAIResponse(
         tripId, 
+        req.userId,
         generatedItinerary, 
         'itinerary', 
         {
@@ -206,12 +223,15 @@ router.post('/itinerary', auth, async (req, res) => {
           endDate,
           interests,
           budget,
+          travelers,
+          userLocation,
           prompt: 'AI-generated travel itinerary'
         }
       );
       
-      const tipsFilename = await storeAIResponse(
+      const tipsResponse = await storeAIResponse(
         tripId, 
+        req.userId,
         generatedLocalTips, 
         'tips', 
         {
@@ -220,13 +240,16 @@ router.post('/itinerary', auth, async (req, res) => {
         }
       );
       
-      console.log('Stored AI responses:', { itineraryFilename, tipsFilename });
+      console.log('Stored AI responses:', { 
+        itineraryId: itineraryResponse._id, 
+        tipsId: tipsResponse._id 
+      });
     } catch (storageError) {
       console.error('Failed to store AI responses:', storageError);
-      // Continue with trip creation even if file storage fails
+      // Continue with trip creation even if storage fails
     }
 
-    // Step 5: Parse the itinerary from file storage
+    // Parse the itinerary from MongoDB storage
     try {
       const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
       
@@ -256,7 +279,7 @@ router.post('/itinerary', auth, async (req, res) => {
         console.warn('Could not retrieve stored AI response for parsing');
       }
     } catch (parseError) {
-      console.error("Error parsing itinerary from stored file:", parseError.message);
+      console.error("Error parsing itinerary from stored document:", parseError.message);
       console.error("Full parse error:", parseError);
     }
 
@@ -343,10 +366,11 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
       budget: budgetForAI
     });
 
-    // Store the new AI response in file storage
+    // Store the new AI response in MongoDB
     try {
-      const filename = await storeAIResponse(
+      const aiResponse = await storeAIResponse(
         tripId, 
+        req.userId,
         generatedItinerary, 
         'itinerary', 
         {
@@ -360,13 +384,13 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
         }
       );
       
-      console.log('Stored regenerated AI response:', filename);
+      console.log('Stored regenerated AI response:', aiResponse._id);
       
-      // Clean up old files (keep only latest 3)
+      // Clean up old responses (keep only latest 3)
       await cleanupOldAIResponses(tripId, 'itinerary', 3);
     } catch (storageError) {
       console.error('Failed to store regenerated AI response:', storageError);
-      // Continue with regeneration even if file storage fails
+      // Continue with regeneration even if storage fails
     }
 
     // Add the new suggestion to the trip
@@ -442,7 +466,7 @@ router.get('/debug', auth, (req, res) => {
 
 /**
  * @route   POST /api/generator/reparse-itinerary/:id
- * @desc    Reparse an existing trip's itinerary from stored AI file
+ * @desc    Reparse an existing trip's itinerary from stored AI response in MongoDB
  * @access  Private
  */
 router.post('/reparse-itinerary/:id', auth, async (req, res) => {
@@ -471,9 +495,9 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
       });
     }
     
-    // Parse the itinerary from the stored file
+    // Parse the itinerary from the stored MongoDB document
     try {
-      console.log('Reparsing itinerary from stored file for trip:', tripId);
+      console.log('Reparsing itinerary from stored MongoDB document for trip:', tripId);
       
       const parsedItinerary = parseStoredAIResponse(storedItinerary, trip.startDate);
       
@@ -507,7 +531,7 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
         });
       }
     } catch (parseError) {
-      console.error("Error reparsing itinerary from stored file:", parseError);
+      console.error("Error reparsing itinerary from stored document:", parseError);
       res.status(500).json({
         success: false,
         message: 'Failed to reparse itinerary',
@@ -526,12 +550,12 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
 
 /**
  * @route   GET /api/generator/storage-stats
- * @desc    Get file storage statistics
+ * @desc    Get MongoDB storage statistics
  * @access  Private
  */
-router.get('/storage-stats', auth, (req, res) => {
+router.get('/storage-stats', auth, async (req, res) => {
   try {
-    const stats = getStorageStats();
+    const stats = await getStorageStats();
     res.json({
       success: true,
       message: 'Storage statistics retrieved successfully',
@@ -548,11 +572,11 @@ router.get('/storage-stats', auth, (req, res) => {
 });
 
 /**
- * @route   GET /api/generator/ai-files/:tripId
- * @desc    List AI response files for a specific trip
+ * @route   GET /api/generator/ai-responses/:tripId
+ * @desc    List AI response records for a specific trip
  * @access  Private
  */
-router.get('/ai-files/:tripId', auth, async (req, res) => {
+router.get('/ai-responses/:tripId', auth, async (req, res) => {
   try {
     const { tripId } = req.params;
     const { type } = req.query; // Optional filter by type
@@ -567,20 +591,20 @@ router.get('/ai-files/:tripId', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to access this trip' });
     }
     
-    const files = listAIResponseFiles(tripId, type);
+    const responses = await listAIResponses(tripId, type);
     
     res.json({
       success: true,
-      message: 'AI response files retrieved successfully',
+      message: 'AI response records retrieved successfully',
       tripId,
-      files,
-      count: files.length
+      responses,
+      count: responses.length
     });
   } catch (error) {
-    console.error('Error listing AI files:', error);
+    console.error('Error listing AI responses:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to list AI response files',
+      message: 'Failed to list AI response records',
       error: error.message
     });
   }
@@ -882,6 +906,161 @@ router.post('/test-hong-kong-trip', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error generating test trip',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/generator/place-photo/:placeName
+ * @desc    Get place photo using Google Places API
+ * @access  Private
+ */
+router.get('/place-photo/:placeName', auth, async (req, res) => {
+  try {
+    const { placeName } = req.params;
+    
+    if (!placeName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Place name is required'
+      });
+    }
+
+    console.log(`Fetching photo for place: ${placeName}`);
+    
+    const photoUrl = await getCachedPlacePhoto(placeName);
+    
+    res.json({
+      success: true,
+      placeName: placeName,
+      photoUrl: photoUrl
+    });
+
+  } catch (error) {
+    console.error('Error fetching place photo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch place photo',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   POST /api/generator/place-photos
+ * @desc    Get photos for multiple places
+ * @access  Private
+ */
+router.post('/place-photos', auth, async (req, res) => {
+  try {
+    const { places } = req.body;
+    
+    if (!places || !Array.isArray(places)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Places array is required'
+      });
+    }
+
+    console.log(`Fetching photos for ${places.length} places`);
+    
+    const photoPromises = places.map(async (place) => {
+      const photoUrl = await getCachedPlacePhoto(place);
+      return {
+        placeName: place,
+        photoUrl: photoUrl
+      };
+    });
+
+    const photos = await Promise.all(photoPromises);
+    
+    res.json({
+      success: true,
+      photos: photos
+    });
+
+  } catch (error) {
+    console.error('Error fetching place photos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch place photos',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   POST /api/generator/clear-photo-cache
+ * @desc    Clear the photo cache (for testing/debugging)
+ * @access  Private
+ */
+router.post('/clear-photo-cache', auth, (req, res) => {
+  try {
+    clearPhotoCache();
+    res.json({
+      success: true,
+      message: 'Photo cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('Error clearing photo cache:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear photo cache',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   POST /api/generator/test-destination-images
+ * @desc    Test destination image fetching for multiple places
+ * @access  Private
+ */
+router.post('/test-destination-images', auth, async (req, res) => {
+  try {
+    const { places } = req.body;
+    
+    if (!places || !Array.isArray(places)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Places array is required'
+      });
+    }
+
+    console.log(`Testing destination images for: ${places.join(', ')}`);
+    
+    const results = [];
+    
+    for (const place of places) {
+      try {
+        const imageUrl = await getCachedPlacePhoto(place);
+        results.push({
+          place: place,
+          imageUrl: imageUrl,
+          source: 'Fetched successfully'
+        });
+      } catch (error) {
+        results.push({
+          place: place,
+          imageUrl: null,
+          source: 'Error',
+          error: error.message
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'Destination image test completed',
+      results: results
+    });
+
+  } catch (error) {
+    console.error('Error testing destination images:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to test destination images',
       error: error.message
     });
   }

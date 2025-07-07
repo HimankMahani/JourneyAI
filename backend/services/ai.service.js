@@ -41,7 +41,7 @@ export const generateContent = async (prompt, options = {}) => {
         ],
         generationConfig: {
           temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 4096,
+          maxOutputTokens: options.maxTokens || 8192,  // Increased from 4096 to 8192
           topP: options.topP || 0.8,
           topK: options.topK || 40
         }
@@ -70,12 +70,13 @@ export const generateContent = async (prompt, options = {}) => {
 };
 
 /**
- * Generate a travel itinerary
+ * Generate a travel itinerary with transportation costs from user location
  * @param {Object} tripDetails - Details about the trip
+ * @param {Object} userLocation - User's location information
  * @returns {Promise<string>} - The generated itinerary
  */
-export const generateTravelItinerary = async (tripDetails) => {
-  const { destination, startDate, endDate, interests = [], budget = 'medium' } = tripDetails;
+export const generateTravelItinerary = async (tripDetails, userLocation = null) => {
+  const { destination, startDate, endDate, interests = [], budget = 'medium', travelers = 1 } = tripDetails;
   
   // Calculate trip duration
   const start = new Date(startDate);
@@ -88,70 +89,139 @@ export const generateTravelItinerary = async (tripDetails) => {
     d.setDate(d.getDate() + dayOffset);
     return d.toISOString().split('T')[0]; // YYYY-MM-DD format
   };
-  
-  // Construct the prompt requesting structured JSON format
-  let prompt = `Generate a detailed ${tripDurationInDays}-day travel itinerary for a trip to ${destination}. 
-  The trip is from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}.`;
-  
-  if (interests && interests.length > 0) {
-    prompt += ` The traveler is interested in ${interests.join(', ')}.`;
+
+  // Build budget context
+  const budgetContext = {
+    'budget': 'Budget-friendly options, local transport, hostels/budget hotels, street food',
+    'mid': 'Mid-range options, mix of public and private transport, 3-star hotels, good restaurants',
+    'luxury': 'Luxury options, private transport, 5-star hotels, fine dining experiences'
+  };
+
+  // Build user location context
+  let locationContext = '';
+  let transportationPrompt = '';
+  if (userLocation && userLocation.full) {
+    locationContext = ` The traveler is coming from ${userLocation.full}.`;
+    transportationPrompt = `
+
+TRANSPORTATION TO DESTINATION:
+Include transportation costs and options from ${userLocation.full} to ${destination}:
+- Flight costs (economy, business if luxury budget)
+- Alternative transport options (train, bus if applicable)
+- Airport/station transfers
+- Visa requirements if international travel
+- Travel time and recommendations`;
   }
   
-  prompt += ` The traveler has a ${budget} budget.
-
-  CRITICAL: You must respond with ONLY a valid JSON array. Do not include any other text, explanations, or markdown formatting. Start your response with [ and end with ]. Example format:
-
-  [`;
+  // Construct the enhanced prompt
+  let prompt = `Generate a comprehensive ${tripDurationInDays}-day travel itinerary for ${travelers} traveler(s) visiting ${destination}.${locationContext}
   
-  // Add example days based on actual trip duration
-  for (let i = 0; i < tripDurationInDays; i++) {
+Trip Details:
+- Dates: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}
+- Budget Level: ${budget} (${budgetContext[budget] || budgetContext['mid']})
+- Interests: ${interests.length > 0 ? interests.join(', ') : 'General sightseeing'}
+- Travelers: ${travelers} person(s)
+
+${transportationPrompt}
+
+CRITICAL FORMATTING: Respond with ONLY a valid JSON array. No markdown, no explanations, no text before or after. Start with [ and end with ].
+
+JSON Structure Required:
+[`;
+  
+  // Add detailed example structure
+  for (let i = 0; i < Math.min(tripDurationInDays, 2); i++) {
     const dayDate = formatDateForAI(startDate, i);
+    const isFirstDay = i === 0;
+    
     prompt += `
-    {
-      "day": ${i + 1},
-      "date": "${dayDate}",
-      "activities": [
-        {
-          "title": "Visit Red Fort",
-          "description": "Explore the historic Red Fort complex",
-          "type": "sightseeing",
-          "time": "10:00",
-          "duration": "2 hours",
-          "cost": "₹50",
-          "location": {
-            "name": "Red Fort",
-            "address": "Netaji Subhash Marg, Delhi"
-          }
-        },
-        {
-          "title": "Lunch at Karim's",
-          "description": "Enjoy authentic Mughlai cuisine",
-          "type": "food",
-          "time": "13:00",
-          "duration": "1.5 hours",
-          "cost": "₹800",
-          "location": {
-            "name": "Karim's Restaurant",
-            "address": "Gali Kababian, Jama Masjid, Delhi"
-          }
+  {
+    "day": ${i + 1},
+    "date": "${dayDate}",
+    "activities": [`;
+    
+    if (isFirstDay && userLocation) {
+      prompt += `
+      {
+        "title": "Travel from ${userLocation.city || userLocation.full} to ${destination}",
+        "description": "Flight/transport from origin to destination including transfers",
+        "type": "transportation",
+        "time": "06:00",
+        "duration": "varies",
+        "cost": "₹25000",
+        "location": {
+          "name": "Airport/Station",
+          "address": "${destination}"
         }
-      ]
-    }${i < tripDurationInDays - 1 ? ',' : ''}`;
+      },`;
+    }
+    
+    prompt += `
+      {
+        "title": "Check-in at Hotel",
+        "description": "Arrive and settle into accommodation",
+        "type": "accommodation",
+        "time": "${isFirstDay ? '14:00' : '09:00'}",
+        "duration": "1 hour",
+        "cost": "₹3000",
+        "location": {
+          "name": "Hotel Name",
+          "address": "Address in ${destination}"
+        }
+      },
+      {
+        "title": "Visit Famous Landmark",
+        "description": "Explore the iconic attractions",
+        "type": "sightseeing",
+        "time": "16:00",
+        "duration": "3 hours",
+        "cost": "₹500",
+        "location": {
+          "name": "Landmark Name",
+          "address": "Address in ${destination}"
+        }
+      },
+      {
+        "title": "Local Cuisine Experience",
+        "description": "Try authentic local dishes",
+        "type": "food",
+        "time": "19:30",
+        "duration": "2 hours",
+        "cost": "₹1200",
+        "location": {
+          "name": "Restaurant Name",
+          "address": "Address in ${destination}"
+        }
+      }
+    ]
+  }${i < Math.min(tripDurationInDays, 2) - 1 ? ',' : ''}`;
+  }
+  
+  if (tripDurationInDays > 2) {
+    prompt += `,
+  ...continue for all ${tripDurationInDays} days`;
   }
   
   prompt += `
-  ]
+]
 
-  Important requirements:
-  - Respond with ONLY the JSON array, no other text
-  - Include 3-5 activities per day
-  - Types must be: sightseeing, food, accommodation, transportation, activity, nightlife, other
-  - Times in 24-hour format (10:00, 14:30, etc.)
-  - Costs in INR with ₹ symbol
-  - Valid JSON syntax - check your brackets and commas
-  - Include real locations for ${destination}`;
-  
-  return generateContent(prompt, { temperature: 0.7 });
+STRICT REQUIREMENTS:
+1. ONLY return the JSON array - no other text, explanations, or formatting
+2. Include ${userLocation ? 'transportation costs from ' + userLocation.full : 'local transportation'}
+3. Include 3-6 activities per day based on ${budget} budget level
+4. Activity types: sightseeing, food, accommodation, transportation, activity, nightlife, shopping
+5. Times in 24-hour format (09:00, 14:30, etc.)
+6. Costs in INR with ₹ symbol, realistic for ${budget} budget
+7. Real locations and attractions in ${destination}
+8. Consider ${interests.join(', ') || 'general tourism'} interests
+9. Valid JSON syntax - proper brackets, commas, quotes
+10. Include estimated costs for meals, attractions, transportation within ${destination}
+11. Account for ${travelers} traveler(s) in group activities and costs`;
+
+  return generateContent(prompt, { 
+    temperature: 0.7,
+    maxTokens: 8192 // Ensure we have enough tokens for detailed responses
+  });
 };
 
 /**
