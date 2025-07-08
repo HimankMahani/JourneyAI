@@ -281,19 +281,19 @@ export const estimateEnhancedTripCosts = async (fromLocation, toDestination, day
   Please provide REALISTIC 2025 prices in Indian Rupees (INR) for:
   
   1. FLIGHTS:
-     - Round-trip economy class flights
+     - Round-trip economy class flights only (no business/luxury)
      - Consider current airline prices, fuel costs, and seasonal variations
      - Include airport taxes and fees
   
   2. ACCOMMODATION:
-     - 3-star to 4-star hotels/stays for ${days-1} nights
+     - Budget to mid-range hotels/stays for ${days-1} nights
      - Include taxes and service charges
      - Consider location and seasonality
   
   3. FOOD & DINING:
      - Breakfast: Mix of hotel and local cafes
      - Lunch: Local restaurants and street food
-     - Dinner: Mid-range to upscale dining
+     - Dinner: Budget to mid-range dining
      - Snacks and beverages throughout the day
      - Consider local cost of living
   
@@ -314,22 +314,16 @@ export const estimateEnhancedTripCosts = async (fromLocation, toDestination, day
      - Tips and service charges
      - Emergency fund
      - Communication (SIM cards, WiFi)
-     - Travel insurance`;
+     - Travel insurance
 
-  if (itinerary && Array.isArray(itinerary)) {
-    const itineraryDetails = itinerary.map((day, index) => {
-      const activities = day.activities || [];
-      const dayActivities = activities.map(activity => 
-        `- ${activity.title || 'Activity'} at ${activity.location || 'location'}`
-      ).join('\n');
-      return `Day ${index + 1}: ${day.date || `Day ${index + 1}`}\n${dayActivities}`;
-    }).join('\n\n');
-    
-    prompt += `\n\nItinerary Details:\n${itineraryDetails}\n\nBased on this itinerary, calculate transportation costs between locations, specific attraction fees, and meal costs at mentioned restaurants.`;
-  }
+  CRITICAL REQUIREMENTS:
+  - Use only economy/budget options for all categories.
+  - Use local prices for all estimates.
+  - If an itinerary is provided, the 'activities' cost in the breakdown should match the sum of the activity costs in the itinerary.
+  - Ensure the sum of all breakdown categories equals totalTripCost.
+  - If any category is missing, set its value to 0.
+  - In the explanation, state how you calculated each category and why the total is reasonable for an economy traveler.
 
-  prompt += `
-  
   Convert all costs to INR and provide response in JSON format:
   {
     "totalTripCost": [total cost in INR],
@@ -353,19 +347,59 @@ export const estimateEnhancedTripCosts = async (fromLocation, toDestination, day
       "factor2: explanation",
       "factor3: explanation"
     ],
-    "explanation": "Brief explanation of the cost calculation methodology"
+    "explanation": "Brief explanation of the cost calculation methodology and sanity check."
   }`;
   
+  if (itinerary && Array.isArray(itinerary)) {
+    const itineraryDetails = itinerary.map((day, index) => {
+      const activities = day.activities || [];
+      const dayActivities = activities.map(activity => 
+        `- ${activity.title || 'Activity'} at ${activity.location || 'location'} (cost: ${activity.cost || 0})`
+      ).join('\n');
+      return `Day ${index + 1}: ${day.date || `Day ${index + 1}`}` + (dayActivities ? `\n${dayActivities}` : '');
+    }).join('\n\n');
+    
+    prompt += `\n\nItinerary Details:\n${itineraryDetails}\n\nBased on this itinerary, calculate transportation costs between locations, specific attraction fees, and meal costs at mentioned restaurants. The sum of all activity costs in the itinerary should be used for the 'activities' category in the breakdown.`;
+  }
+
   const response = await generateContent(prompt, { temperature: 0.2 });
   
   try {
     // Extract JSON from response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
+    let aiResult = null;
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      aiResult = JSON.parse(jsonMatch[0]);
+      // --- POST-PROCESSING LOGIC ---
+      // If itinerary is provided, override activities cost
+      if (itinerary && Array.isArray(itinerary)) {
+        let itineraryActivitiesCost = 0;
+        itinerary.forEach(day => {
+          (day.activities || []).forEach(activity => {
+            let cost = activity.cost;
+            if (typeof cost === 'string') {
+              cost = parseInt(String(cost).replace(/[^\d]/g, ''), 10) || 0;
+            }
+            if (typeof cost === 'number' && !isNaN(cost)) {
+              itineraryActivitiesCost += cost;
+            }
+          });
+        });
+        if (aiResult.breakdown) {
+          aiResult.breakdown.activities = itineraryActivitiesCost;
+        }
+      }
+      // Ensure totalTripCost is the sum of breakdown
+      if (aiResult.breakdown) {
+        const sum = Object.values(aiResult.breakdown).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+        aiResult.totalTripCost = sum;
+      }
+      return aiResult;
     }
-    
-    // Enhanced fallback with more realistic estimates
+    // ... fallback logic ...
+  } catch (error) {
+    console.error('Error parsing enhanced cost response:', error);
+    // Return the fallback calculation
     const baseFlightCost = getFlightCostByDistance(fromLocation, toDestination) * travelers;
     const accommodationCost = getAccommodationCost(toDestination, days - 1);
     const foodCost = getFoodCost(toDestination, days, travelers);
@@ -397,41 +431,6 @@ export const estimateEnhancedTripCosts = async (fromLocation, toDestination, day
         "Tourist density: Price premiums in popular tourist areas"
       ],
       explanation: "Comprehensive cost estimation using enhanced calculation model"
-    };
-  } catch (error) {
-    console.error('Error parsing enhanced cost response:', error);
-    // Return the fallback calculation
-    const baseFlightCost = getFlightCostByDistance(fromLocation, toDestination) * travelers;
-    const accommodationCost = getAccommodationCost(toDestination, days - 1);
-    const foodCost = getFoodCost(toDestination, days, travelers);
-    const transportCost = getLocalTransportCost(toDestination, days, travelers);
-    const activitiesCost = getActivitiesCost(toDestination, days, travelers);
-    const shoppingCost = getShoppingCost(toDestination, days, travelers);
-    
-    return {
-      totalTripCost: baseFlightCost + accommodationCost + foodCost + transportCost + activitiesCost + shoppingCost,
-      breakdown: {
-        flights: baseFlightCost,
-        accommodation: accommodationCost,
-        food: foodCost,
-        localTransport: transportCost,
-        activities: activitiesCost,
-        shopping: Math.round(shoppingCost * 0.7), // 70% for shopping
-        misc: Math.round(shoppingCost * 0.3) // 30% for miscellaneous
-      },
-      dailyBreakdown: {
-        accommodationPerNight: Math.round(accommodationCost / (days - 1)),
-        foodPerPersonPerDay: Math.round(foodCost / (days * travelers)),
-        transportPerDay: Math.round(transportCost / days),
-        activitiesPerDay: Math.round(activitiesCost / days)
-      },
-      costFactors: [
-        "Distance: Flight cost based on route distance and popularity",
-        "Seasonality: Peak/off-season pricing variations", 
-        "Local economy: Cost of living in destination",
-        "Tourist density: Price premiums in popular tourist areas"
-      ],
-      explanation: "Default enhanced cost estimation"
     };
   }
 };
