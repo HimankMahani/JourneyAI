@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { TripProvider } from './contexts/TripContext'
 import { Toaster } from 'sonner'
+import { Analytics } from "@vercel/analytics/react"
 
 // Create a layout component to avoid repetition
 const Layout = ({ children }) => (
@@ -94,6 +95,7 @@ const App = () => {
           {/* Catch-all route - redirect to home */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+          <Analytics />
         </TripProvider>
       </AuthProvider>
       <Toaster position="top-center" richColors />
