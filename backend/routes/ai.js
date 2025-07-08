@@ -220,4 +220,115 @@ router.post('/local-tips', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/ai/estimate-flight-cost
+// @desc    Get AI-powered flight cost estimation
+// @access  Private
+router.post('/estimate-flight-cost', auth, async (req, res) => {
+  try {
+    const { fromLocation, toDestination, travelers = 1 } = req.body;
+    
+    if (!fromLocation || !toDestination) {
+      return res.status(400).json({ message: 'Please provide both fromLocation and toDestination' });
+    }
+    
+    const { estimateFlightCost } = await import('../services/ai.service.js');
+    const costEstimate = await estimateFlightCost(fromLocation, toDestination, travelers);
+    
+    res.json({
+      fromLocation,
+      toDestination,
+      travelers,
+      ...costEstimate,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Flight cost estimation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/ai/estimate-food-cost
+// @desc    Get AI-powered food cost estimation
+// @access  Private
+router.post('/estimate-food-cost', auth, async (req, res) => {
+  try {
+    const { destination, days = 1, travelers = 1 } = req.body;
+    
+    if (!destination) {
+      return res.status(400).json({ message: 'Please provide destination' });
+    }
+    
+    const { estimateFoodCost } = await import('../services/ai.service.js');
+    const costEstimate = await estimateFoodCost(destination, days, travelers);
+    
+    res.json({
+      destination,
+      days,
+      travelers,
+      ...costEstimate,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Food cost estimation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/ai/estimate-trip-costs
+// @desc    Get comprehensive AI-powered trip cost estimation
+// @access  Private
+router.post('/estimate-trip-costs', auth, async (req, res) => {
+  try {
+    const { fromLocation, toDestination, days = 1, travelers = 1 } = req.body;
+    
+    if (!fromLocation || !toDestination) {
+      return res.status(400).json({ message: 'Please provide both fromLocation and toDestination' });
+    }
+    
+    const { estimateComprehensiveTripCosts } = await import('../services/ai.service.js');
+    const costEstimate = await estimateComprehensiveTripCosts(fromLocation, toDestination, days, travelers);
+    
+    res.json({
+      fromLocation,
+      toDestination,
+      days,
+      travelers,
+      ...costEstimate,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Trip cost estimation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/ai/estimate-enhanced-trip-costs
+// @desc    Get enhanced AI-powered trip cost estimation with itinerary awareness
+// @access  Private
+router.post('/estimate-enhanced-trip-costs', auth, async (req, res) => {
+  try {
+    const { fromLocation, toDestination, days = 1, travelers = 1, itinerary = [] } = req.body;
+    
+    if (!fromLocation || !toDestination) {
+      return res.status(400).json({ message: 'Please provide both fromLocation and toDestination' });
+    }
+    
+    const { estimateEnhancedTripCosts } = await import('../services/ai.service.js');
+    const costEstimate = await estimateEnhancedTripCosts(fromLocation, toDestination, days, travelers, itinerary);
+    
+    res.json({
+      fromLocation,
+      toDestination,
+      days,
+      travelers,
+      itinerary: itinerary.length,
+      ...costEstimate,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Enhanced trip cost estimation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

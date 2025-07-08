@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { useTripContext } from '../contexts/useTripContext'
 import TripCard from './TripCard'
 import AIButton from './ui/ai-button';
-import { Calendar, MapIcon, Backpack, Users, IndianRupee, Search, Edit3 } from 'lucide-react';
+import { Calendar, MapIcon, Backpack, Users, IndianRupee, Search, Edit3, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Booking = () => {
-  const { trips, loading } = useTripContext();
+  const { trips, loading, deleteTrip } = useTripContext();
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   // Helper function to extract destination name from object or string
   const getDestinationName = (destination) => {
@@ -61,6 +63,18 @@ const Booking = () => {
       case 'cancelled': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
+  };
+
+  const handleDeleteTrip = async (tripId) => {
+    if (!window.confirm('Are you sure you want to delete this trip? This action cannot be undone.')) return;
+    setDeletingId(tripId);
+    const result = await deleteTrip(tripId);
+    if (result.success) {
+      toast.success('Trip deleted successfully');
+    } else {
+      toast.error(result.error || 'Failed to delete trip');
+    }
+    setDeletingId(null);
   };
 
   if (loading) {
@@ -139,6 +153,8 @@ const Booking = () => {
               getStatusColor={getStatusColor}
               getDestinationName={getDestinationName}
               getBudgetAmount={getBudgetAmount}
+              onDelete={handleDeleteTrip}
+              deleting={deletingId === trip._id}
             />
           ))}
         </div>

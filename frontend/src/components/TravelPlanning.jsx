@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, MapPin, Sparkles, Zap, Star } from "lucide-react";
-import { TripGenerationLoader } from "./TripGenerationLoader";
+import { TripGenerationLoader } from "./ui/PlanningPageSkeleton";
 import { useTrip } from "@/contexts/useTrip";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -140,7 +140,7 @@ const TravelPlanning = () => {
     <>
       {isPlanning && <TripGenerationLoader />}
       
-      <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+      <section id="travel-planning" className="py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
         {/* Background decorations */}
         <div className="absolute top-0 left-0 w-full h-full opacity-30">
           <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
@@ -263,10 +263,10 @@ const TravelPlanning = () => {
                       className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
                     >
                       <option value="">Select budget</option>
-                      <option value="economy">Economy (₹0-40,000)</option>
-                      <option value="budget">Budget (₹40,000-1,25,000)</option>
-                      <option value="mid">Mid-range (₹1,25,000-2,50,000)</option>
-                      <option value="luxury">Luxury (₹2,50,000+)</option>
+                      <option value="economy">Economy</option>
+                      <option value="budget">Budget</option>
+                      <option value="mid-range">Mid-range</option>
+                      <option value="luxury">Luxury</option>
                     </select>
                   </div>
                 </div>

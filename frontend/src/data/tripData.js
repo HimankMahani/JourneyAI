@@ -1,11 +1,14 @@
 // Mock data for the planning component
 
 export const selectedTrip = {
-  destination: "Paris, France",
-  duration: "7 days",
-  dates: "July 15-22, 2024",
+  destination: "Paris, France", 
+  startDate: "2025-07-10",
+  endDate: "2025-07-16", 
   travelers: 2,
-  budget: "₹2,92,000"
+  budget: {
+    amount: 292000,
+    currency: "₹"
+  }
 };
 
 export const itinerary = [

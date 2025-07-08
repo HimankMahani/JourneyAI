@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import AIButton from "@/components/ui/ai-button";
 import { GradientBadge } from "@/components/ui/GradientBadge";
 import { Sparkles, Plane, MapPin, Globe } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const FLOATING_ICONS = [
   { Icon: Plane, top: "20%", left: "10%", delay: "0s", duration: "6s" },
@@ -18,6 +20,36 @@ const STATS = [
 ];
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleStartAIPlanning = () => {
+    // Scroll to the TravelPlanning section on the same page
+    const travelPlanningSection = document.getElementById('travel-planning');
+    if (travelPlanningSection) {
+      // Calculate offset to account for header
+      const headerHeight = 80; // Approximate header height
+      const targetPosition = travelPlanningSection.offsetTop - headerHeight;
+      
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleExploreDestinations = () => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error("Please sign in to explore destinations");
+      navigate('/login');
+      return;
+    }
+    
+    // Navigate to the destinations page
+    navigate('/destinations');
+  };
+
   return (
     <section className="relative min-h-[calc(100vh-4rem)] bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white overflow-hidden transition-all duration-700">
       {/* Background elements */}
@@ -33,19 +65,22 @@ const Hero = () => {
       
       {/* Floating icons */}
       <div className="absolute inset-0 pointer-events-none">
-        {FLOATING_ICONS.map(({ Icon, top, left, right, delay, duration }, index) => (
-          <div 
-            key={index}
-            className="absolute opacity-20 animate-float animate-spin" 
-            style={{ 
-              top, left, right, 
-              animationDelay: delay, 
-              animationDuration: duration 
-            }}
-          >
-            <Icon className="h-6 w-6 text-white" />
-          </div>
-        ))}
+        {FLOATING_ICONS.map(({ Icon, top, left, right, delay, duration }, index) => {
+          const IconComponent = Icon;
+          return (
+            <div 
+              key={index}
+              className="absolute opacity-20 animate-float animate-spin" 
+              style={{ 
+                top, left, right, 
+                animationDelay: delay, 
+                animationDuration: duration 
+              }}
+            >
+              <IconComponent className="h-6 w-6 text-white" />
+            </div>
+          );
+        })}
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
@@ -72,12 +107,20 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <AIButton className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white font-semibold text-base px-12 py-4 rounded-xl">
+              <AIButton 
+                className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white font-semibold text-base px-12 py-4 rounded-xl"
+                onClick={handleStartAIPlanning}
+              >
                 <Sparkles className="mr-3 h-6 w-6" />
                 Start AI Planning
               </AIButton>
               
-              <Button size="lg" variant="outline" className="border-2 border-white/50 bg-white/10 text-white backdrop-blur-sm text-lg px-10 py-6 rounded-2xl">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white/50 bg-white/10 text-white backdrop-blur-sm text-lg px-10 py-6 rounded-2xl"
+                onClick={handleExploreDestinations}
+              >
                 <Globe className="mr-3 h-6 w-6" />
                 Explore Destinations
               </Button>

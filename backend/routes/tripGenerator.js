@@ -29,8 +29,39 @@ dotenv.config();
 const router = express.Router();
 
 /**
+ * Parse travelers count from various input formats
+ * @param {string|number} travelers - Travelers input (e.g., "3-4", "5+", 2)
+ * @returns {number} - Numeric travelers count
+ */
+function parseTravelersCount(travelers) {
+  if (typeof travelers === 'number') {
+    return Math.max(1, travelers);
+  }
+  
+  if (typeof travelers === 'string') {
+    // Handle "3-4" format - take the first number
+    if (travelers.includes('-')) {
+      const firstNumber = parseInt(travelers.split('-')[0], 10);
+      return isNaN(firstNumber) ? 1 : Math.max(1, firstNumber);
+    }
+    
+    // Handle "5+" format - take the number
+    if (travelers.includes('+')) {
+      const number = parseInt(travelers.replace('+', ''), 10);
+      return isNaN(number) ? 1 : Math.max(1, number);
+    }
+    
+    // Handle plain number string
+    const number = parseInt(travelers, 10);
+    return isNaN(number) ? 1 : Math.max(1, number);
+  }
+  
+  return 1; // Default fallback
+}
+
+/**
  * Dynamic budget calculation based on destination, duration, and budget level
- * @param {string} budgetLevel - Economy, Budget, Mid, Medium, Luxury, or Premium
+ * @param {string} budgetLevel - Economy, Budget, Mid-range, or Luxury
  * @param {string} destination - The trip destination
  * @param {string} startDate - Trip start date
  * @param {string} endDate - Trip end date
@@ -47,10 +78,8 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
   const dailyRatesByLevel = {
     'economy': 5000,
     'budget': 8000,
-    'mid': 12000,
-    'medium': 15000,
-    'luxury': 25000,
-    'premium': 40000
+    'mid-range': 12000,
+    'luxury': 25000
   };
   
   // Destination cost factors (relative to 1.0 baseline)
@@ -79,9 +108,9 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
     tripDuration = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
   }
   
-  // Get budget level (default to medium)
-  const level = (budgetLevel || 'medium').toLowerCase();
-  const dailyRate = dailyRatesByLevel[level] || dailyRatesByLevel['medium'];
+  // Get budget level (default to mid-range)
+  const level = (budgetLevel || 'mid-range').toLowerCase();
+  const dailyRate = dailyRatesByLevel[level] || dailyRatesByLevel['mid-range'];
   
   // Get destination factor
   let destinationFactor = 1.0; // Default factor
@@ -94,9 +123,7 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
   }
   
   // Calculate travelers (ensure at least 1)
-  const numTravelers = typeof travelers === 'number' ? Math.max(1, travelers) : 
-                      (typeof travelers === 'string' && travelers.includes('+') ? 
-                        parseInt(travelers) || 1 : 1);
+  const numTravelers = parseTravelersCount(travelers);
   
   // Calculate total budget
   const totalBudget = Math.round(dailyRate * tripDuration * numTravelers * destinationFactor);
@@ -126,7 +153,7 @@ router.post('/itinerary', auth, async (req, res) => {
       startDate, 
       endDate, 
       interests = [], 
-      budget = 'medium',
+      budget = 'mid-range',
       travelers = 1,
       title 
     } = req.body;
@@ -178,6 +205,14 @@ router.post('/itinerary', auth, async (req, res) => {
 
     // Step 3: Create a new trip with the generated itinerary
     const tripTitle = title || `Trip to ${destination}`;
+    
+    // Debug logging for travelers
+    console.log('Trip generation - travelers data:', {
+      originalTravelers: travelers,
+      type: typeof travelers,
+      parsed: parseInt(travelers, 10) || 1
+    });
+    
     const budgetAmount = getBudgetAmount(budget, destination, startDate, endDate, travelers);
     
     const newTrip = new Trip({
@@ -192,6 +227,7 @@ router.post('/itinerary', auth, async (req, res) => {
         amount: budgetAmount,
         currency: 'INR'
       },
+      travelers: parseTravelersCount(travelers), // Parse travelers properly
       aiSuggestions: [
         {
           content: generatedItinerary,
@@ -341,21 +377,19 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
     }
 
     // Generate new itinerary using the trip's existing data plus new interests
-    const existingBudget = trip.budget?.amount || 'medium';
+    const existingBudget = trip.budget?.amount || 'mid-range';
     
     // Convert budget back to string if it's a number (for the AI prompt)
     let budgetForAI = existingBudget;
     if (typeof existingBudget === 'number') {
       // Reverse lookup to get budget level from amount
       const budgetMap = {
-        1000: 'economy',
-        2000: 'budget', 
-        3000: 'mid',
-        4000: 'medium',
-        8000: 'luxury',
-        15000: 'premium'
+        5000: 'economy',
+        8000: 'budget', 
+        12000: 'mid-range',
+        25000: 'luxury'
       };
-      budgetForAI = budgetMap[existingBudget] || 'medium';
+      budgetForAI = budgetMap[existingBudget] || 'mid-range';
     }
     
     const generatedItinerary = await generateTravelItinerary({
@@ -363,7 +397,8 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
       startDate: trip.startDate,
       endDate: trip.endDate,
       interests,
-      budget: budgetForAI
+      budget: budgetForAI,
+      travelers: trip.travelers || 1 // Use existing travelers count or default to 1
     });
 
     // Store the new AI response in MongoDB

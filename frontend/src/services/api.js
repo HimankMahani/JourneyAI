@@ -241,5 +241,117 @@ export const tripService = {
   }
 };
 
+export const weatherService = {
+  getCurrentWeather: async ({ city, lat, lon }) => {
+    try {
+      let url = '/weather/current?';
+      if (city) url += `city=${encodeURIComponent(city)}`;
+      if (lat && lon) url += `lat=${lat}&lon=${lon}`;
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  getForecast: async ({ city, lat, lon }) => {
+    try {
+      let url = '/weather/forecast?';
+      if (city) url += `city=${encodeURIComponent(city)}`;
+      if (lat && lon) url += `lat=${lat}&lon=${lon}`;
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  }
+};
+
+export const aiService = {
+  getDestinationInfo: async (destination) => {
+    try {
+      const response = await api.post('/ai/destination-info', { destination });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  
+  getTripSuggestions: async (tripId) => {
+    try {
+      const response = await api.post('/ai/trip-suggestions', { tripId });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  
+  getLocalRecommendations: async (destination) => {
+    try {
+      const response = await api.post('/ai/local-recommendations', { destination });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  
+  // New methods for cost estimation
+  estimateFlightCost: async (fromLocation, toDestination, travelers = 1) => {
+    try {
+      const response = await api.post('/ai/estimate-flight-cost', { 
+        fromLocation, 
+        toDestination, 
+        travelers 
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  
+  estimateFoodCost: async (destination, days = 1, travelers = 1) => {
+    try {
+      const response = await api.post('/ai/estimate-food-cost', { 
+        destination, 
+        days, 
+        travelers 
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+  
+  estimateTripCosts: async (fromLocation, toDestination, days = 1, travelers = 1, itinerary = null) => {
+    try {
+      const response = await api.post('/ai/estimate-trip-costs', { 
+        fromLocation, 
+        toDestination, 
+        days, 
+        travelers,
+        itinerary
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
+  // Enhanced cost estimation with itinerary details
+  estimateEnhancedTripCosts: async (fromLocation, toDestination, days = 1, travelers = 1, itinerary = null) => {
+    try {
+      const response = await api.post('/ai/estimate-enhanced-trip-costs', { 
+        fromLocation, 
+        toDestination, 
+        days, 
+        travelers,
+        itinerary
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  }
+};
+
 // Export default api instance for any other requests
 export default api;

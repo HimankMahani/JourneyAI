@@ -54,9 +54,7 @@ const ItineraryTab = ({
                   <div className="text-blue-100 text-lg">{day.date}</div>
                 </div>
               </div>
-              <Badge className="bg-white/20 text-white text-lg px-6 py-3 font-semibold">
-                {day.theme}
-              </Badge>
+              
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 space-y-6">

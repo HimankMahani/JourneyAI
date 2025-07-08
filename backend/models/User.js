@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema({
   preferences: {
     travelStyle: {
       type: String,
-      enum: ['budget', 'mid-range', 'luxury', 'backpacker']
+      enum: ['economy', 'budget', 'mid-range', 'luxury']
     },
     interests: [{
       type: String,

@@ -77,8 +77,8 @@ export const TripProvider = ({ children }) => {
     try {
       setLoading(true);
       await tripService.deleteTrip(tripId);
-      setTrips(prev => prev.filter(trip => trip.id !== tripId));
-      if (currentTrip?.id === tripId) {
+      setTrips(prev => prev.filter(trip => trip._id !== tripId));
+      if (currentTrip?._id === tripId) {
         setCurrentTrip(null);
       }
       return { success: true };

@@ -9,8 +9,10 @@ import ItineraryTab from '@/components/planning/tabs/ItineraryTab';
 import PackingTab from '@/components/planning/tabs/PackingTab';
 import DestinationInfoTab from '@/components/planning/tabs/DestinationInfoTab';
 import OverviewTab from '@/components/planning/tabs/OverviewTab';
+import { TripGenerationLoader } from '@/components/ui/PlanningPageSkeleton';
 import { toast } from 'sonner';
 import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
+import { weatherService } from '@/services/api';
 
 // Use mock data as fallback or for development
 import {
@@ -21,8 +23,7 @@ import {
   travelTimeline,
   budgetBreakdown,
   documentChecklist,
-  emergencyContacts,
-  weatherOverview
+  emergencyContacts
 } from '@/data/tripData';
 
 // Utility function to ensure itinerary has proper structure
@@ -33,6 +34,8 @@ const normalizeItinerary = (itinerary) => {
   
   return itinerary.map(day => ({
     ...day,
+    // Format the date properly
+    date: day.date ? formatDate(day.date) : `Day ${day.day}`,
     activities: (day.activities || []).map(activity => ({
       title: activity.title || activity.name || activity.activity || 'Activity',
       description: activity.description || '',
@@ -43,6 +46,51 @@ const normalizeItinerary = (itinerary) => {
       location: activity.location || { name: activity.location || 'TBD' }
     }))
   }));
+};
+
+// Utility function to format dates properly
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    // Check if it's a valid date
+    if (isNaN(date.getTime())) {
+      return dateString; // Return original if invalid
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString; // Return original if error
+  }
+};
+
+// Utility function to ensure trip has proper structure
+const normalizeTrip = (trip) => {
+  if (!trip) return trip;
+  
+  return {
+    ...trip,
+    // Ensure travelers is a number
+    travelers: parseInt(trip.travelers || trip.travellers || trip.numberOfTravelers || trip.numTravelers || 1, 10),
+    // Ensure dates are properly formatted
+    startDate: trip.startDate || trip.dates?.start || trip.dates?.startDate,
+    endDate: trip.endDate || trip.dates?.end || trip.dates?.endDate,
+    // Ensure destination is properly formatted
+    destination: typeof trip.destination === 'string' 
+      ? { name: trip.destination } 
+      : trip.destination || { name: 'Unknown Destination' },
+    // Ensure budget is properly formatted
+    budget: typeof trip.budget === 'string'
+      ? { amount: parseInt(trip.budget.replace(/[^\d]/g, ''), 10) || 0, currency: '₹' }
+      : trip.budget || { amount: 0, currency: '₹' }
+  };
 };
 
 // Function to get destination ID from destination name
@@ -98,6 +146,7 @@ const Planning = () => {
   const [packingList, setPackingList] = useState(null);
   const [destinationInfo, setDestinationInfo] = useState(null);
   const [tripLoaded, setTripLoaded] = useState(false);
+  const [weather, setWeather] = useState(null);
 
   const loadTrip = useCallback(async (tripId) => {
     console.log('Planning: Loading trip with ID:', tripId);
@@ -167,7 +216,7 @@ const Planning = () => {
         }
         
         setItinerary(normalizeItinerary(fallbackItinerary));
-        setTrip(fallbackTrip);
+        setTrip(normalizeTrip(fallbackTrip));
         setPackingList(mockPackingList);
         setDestinationInfo(mockDestinationInfo);
         setIsLoading(false);
@@ -190,7 +239,7 @@ const Planning = () => {
       // Check if currentTrip matches the requested tripId
       if (tripId && (currentTrip._id === tripId || currentTrip.id === tripId)) {
         console.log('Planning: currentTrip matches requested tripId, using directly');
-        setTrip(currentTrip);
+        setTrip(normalizeTrip(currentTrip));
         
         // If trip has itinerary, use it; otherwise fall back to mock data
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
@@ -237,7 +286,7 @@ const Planning = () => {
       } else if (!tripId) {
         console.log('Planning: No tripId provided, using currentTrip');
         // No tripId but we have currentTrip, use it
-        setTrip(currentTrip);
+        setTrip(normalizeTrip(currentTrip));
         
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
           setItinerary(normalizeItinerary(currentTrip.itinerary));
@@ -263,7 +312,7 @@ const Planning = () => {
     } else if (!tripId) {
       console.log('Planning: Using mock data (no tripId and no currentTrip)');
       // Only use mock data if there's no tripId and no currentTrip
-      setTrip(mockTrip);
+      setTrip(normalizeTrip(mockTrip));
       setItinerary(normalizeItinerary(mockItinerary));
       setPackingList(mockPackingList);
       setDestinationInfo(mockDestinationInfo);
@@ -271,6 +320,25 @@ const Planning = () => {
       setTripLoaded(true);
     }
   }, [currentTrip, tripId]);
+
+  useEffect(() => {
+    // Fetch weather info when trip is loaded
+    if (trip && trip.destination) {
+      const city = typeof trip.destination === 'string' ? trip.destination : trip.destination.name;
+      console.log('Planning: Fetching weather for city:', city);
+      if (city) {
+        weatherService.getCurrentWeather({ city })
+          .then(weatherData => {
+            console.log('Planning: Weather data received:', weatherData);
+            setWeather(weatherData);
+          })
+          .catch(err => {
+            console.error('Planning: Failed to fetch weather:', err);
+            setWeather(null);
+          });
+      }
+    }
+  }, [trip]);
 
   const togglePackingItem = (category, index) => {
     const key = `${category}-${index}`;
@@ -321,7 +389,7 @@ const Planning = () => {
       
       if (result.success) {
         // Update the local state with the new data
-        setTrip(result.data);
+        setTrip(normalizeTrip(result.data));
         setItinerary(normalizeItinerary(result.data.itinerary) || normalizeItinerary(mockItinerary));
         toast.success("Itinerary regenerated successfully!");
         // Switch to the itinerary tab to show the new plan
@@ -394,21 +462,30 @@ const Planning = () => {
 
           {/* Destination Info Tab */}
           {activeTab === 'destination' && (
-            <DestinationInfoTab destinationInfo={destinationInfo} />
+            <DestinationInfoTab 
+              destinationInfo={destinationInfo}
+              weather={weather}
+              trip={trip}
+            />
           )}
 
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <OverviewTab 
+              trip={trip}
+              itinerary={itinerary}
+              weatherOverview={weather}
               travelTimeline={travelTimeline}
               budgetBreakdown={budgetBreakdown}
               documentChecklist={documentChecklist}
               emergencyContacts={emergencyContacts}
-              weatherOverview={weatherOverview}
             />
           )}
         </div>
       </div>
+      
+      {/* Show loader when regenerating */}
+      {isRegenerating && <TripGenerationLoader />}
     </div>
   );
 };

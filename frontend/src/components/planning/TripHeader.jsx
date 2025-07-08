@@ -20,7 +20,14 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
     const end = new Date(endDate);
     const diffTime = Math.abs(end - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} days`;
+    return `${diffDays} day${diffDays === 1 ? '' : 's'}`;
+  };
+
+  // Helper function to get travelers count
+  const getTravelersCount = (trip) => {
+    // Check various possible field names for travelers
+    const travelers = trip?.travelers || trip?.travellers || trip?.numberOfTravelers || trip?.numTravelers || 1;
+    return `${travelers} traveler${travelers === 1 ? '' : 's'}`;
   };
 
   // Calculate total costs from activities in the itinerary
@@ -107,7 +114,7 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
               </div>
               <div className="flex items-center space-x-3 bg-white/80 px-4 py-3 rounded-xl border shadow-lg">
                 <Star className="h-5 w-5 text-purple-600" />
-                <span className="font-semibold">{trip.travelers || '1'} travelers</span>
+                <span className="font-semibold">{getTravelersCount(trip)}</span>
               </div>
             </div>
           </div>

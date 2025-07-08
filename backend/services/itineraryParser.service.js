@@ -211,14 +211,33 @@ export const parseItineraryJSON = (jsonText, startDate) => {
             console.log(`Type normalization: "${originalType}" -> "${normalizedType}"`);
           }
           
+          // Sanitize location: convert object to string if needed
+          let locationValue = activity.location;
+          if (typeof locationValue === 'object' && locationValue !== null) {
+            locationValue = [locationValue.name, locationValue.address].filter(Boolean).join(', ');
+          }
+          if (typeof locationValue !== 'string') {
+            locationValue = String(locationValue || 'TBD');
+          }
+
+          // Sanitize cost: convert string with currency to number
+          let costValue = activity.cost;
+          if (typeof costValue === 'string') {
+            const numeric = costValue.replace(/[^0-9.]/g, '');
+            costValue = Number(numeric) || 0;
+          }
+          if (typeof costValue !== 'number') {
+            costValue = 0;
+          }
+          
           return {
             title: activity.title || 'Untitled Activity',
             description: activity.description || '',
             type: normalizedType,
             time: activity.time || '09:00',
             duration: activity.duration || '1 hour',
-            cost: activity.cost || '₹0',
-            location: activity.location || { name: 'TBD', address: '' }
+            cost: costValue,
+            location: locationValue
           };
         })
       };
@@ -530,17 +549,33 @@ export const normalizeItinerary = (itinerary, startDate) => {
           normalizedType = 'activity';
         }
         
+        // Sanitize location: convert object to string if needed
+        let locationValue = activity.location;
+        if (typeof locationValue === 'object' && locationValue !== null) {
+          locationValue = [locationValue.name, locationValue.address].filter(Boolean).join(', ');
+        }
+        if (typeof locationValue !== 'string') {
+          locationValue = String(locationValue || 'TBD');
+        }
+
+        // Sanitize cost: convert string with currency to number
+        let costValue = activity.cost;
+        if (typeof costValue === 'string') {
+          const numeric = costValue.replace(/[^0-9.]/g, '');
+          costValue = Number(numeric) || 0;
+        }
+        if (typeof costValue !== 'number') {
+          costValue = 0;
+        }
+        
         return {
           title: activity.title || 'Untitled Activity',
           description: activity.description || '',
           type: normalizedType,
           time: activity.time || '09:00',
           duration: activity.duration || '1 hour',
-          cost: activity.cost || '₹0',
-          location: {
-            name: (activity.location && activity.location.name) || 'TBD',
-            address: (activity.location && activity.location.address) || ''
-          }
+          cost: costValue,
+          location: locationValue
         };
       })
     };

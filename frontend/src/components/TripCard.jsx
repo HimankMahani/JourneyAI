@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePlacePhoto } from '../hooks/usePlacePhoto';
-import { Calendar, MapIcon, Users, IndianRupee, Edit3 } from 'lucide-react';
+import { Calendar, MapIcon, Users, IndianRupee, Edit3, Trash2 } from 'lucide-react';
 
-const TripCard = ({ trip, formatDate, getStatusColor, getDestinationName, getBudgetAmount }) => {
+const TripCard = ({ trip, formatDate, getStatusColor, getDestinationName, getBudgetAmount, onDelete, deleting }) => {
   const destinationName = getDestinationName(trip.destination);
   const { photoUrl, loading: photoLoading } = usePlacePhoto(destinationName);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -109,6 +109,18 @@ const TripCard = ({ trip, formatDate, getStatusColor, getDestinationName, getBud
             >
               <Edit3 className="h-4 w-4 text-gray-500 group-hover:text-gray-700" />
             </Link>
+          )}
+          {onDelete && (
+            <button
+              className={`px-3 py-2 border border-red-300 rounded-lg hover:bg-red-50 transition-colors duration-200 group flex items-center justify-center ${deleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title="Delete Trip"
+              onClick={() => onDelete(trip._id)}
+              disabled={deleting}
+              type="button"
+            >
+              <Trash2 className="h-4 w-4 text-red-500 group-hover:text-red-700" />
+              {deleting && <span className="ml-2 text-xs text-red-500">Deleting...</span>}
+            </button>
           )}
         </div>
       </div>
