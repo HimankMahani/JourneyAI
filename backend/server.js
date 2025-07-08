@@ -39,10 +39,20 @@ app.use(express.urlencoded({ extended: true }));
 // Static files only for production
 // app.use(express.static(path.join(__dirname, 'dist')));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
+// Connect to MongoDB with more robust connection options
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 30000, // Increase timeout for slow connections
+  socketTimeoutMS: 45000, // How long to wait for responses from MongoDB
+  autoIndex: true, // Build indexes
+  maxPoolSize: 10, // Maintain up to 10 socket connections
+  family: 4 // Use IPv4, skip trying IPv6
+})
   .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    // Don't crash the server if MongoDB connection fails
+    console.log('Continuing without MongoDB connection...');
+  });
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -74,7 +84,29 @@ app.get('*', (req, res) => {
 });
 */
 
-// Start server
-app.listen(PORT, () => {
+// Error handler middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'production' ? 'An error occurred' : err.message
+  });
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process - just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.log('Uncaught Exception:', error);
+  // Don't exit the process - just log the error
+});
+
+// Start server with error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
