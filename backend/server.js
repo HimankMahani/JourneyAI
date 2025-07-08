@@ -25,7 +25,14 @@ const app = express();
 const PORT = process.env.PORT || 5050;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://journey-ai-beta.vercel.app/login',
+    'http://localhost:5173',
+    'http://localhost:5174' 
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Static files only for production
