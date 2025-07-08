@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, MapPin, Sparkles, Zap, Star } from "lucide-react";
 import { TripGenerationLoader } from "./ui/PlanningPageSkeleton";
 import { useTrip } from "@/contexts/useTrip";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/useAuth";
 
 const TravelPlanning = () => {
   const { generateAIItinerary } = useTrip();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [isPlanning, setIsPlanning] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [formData, setFormData] = useState({
+    from: '',
     destination: '',
     startDate: '',
     endDate: '',
@@ -20,38 +23,31 @@ const TravelPlanning = () => {
     budget: ''
   });
 
+  useEffect(() => {
+    if (user && user.location && !formData.from) {
+      setFormData(prev => ({ ...prev, from: user.location }));
+    }
+  }, [user]);
+
   const handlePlanTrip = async () => {
-    // Check authentication state first
     const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    console.log("Authentication state:");
-    console.log("- Token exists:", !!token);
-    console.log("- Token preview:", token ? token.substring(0, 20) + '...' : 'none');
-    console.log("- User exists:", !!user);
-    console.log("- User:", user ? JSON.parse(user) : 'none');
 
     if (!token) {
       toast.error("You must be logged in to generate a trip");
       return;
     }
 
-    // Basic validation
-    if (!formData.destination) {
-      toast.error("Please enter a destination");
+    if (!formData.destination || !formData.startDate || !formData.endDate || !formData.from) {
+      toast.error("Please fill in all required fields");
       return;
     }
-    
-    if (!formData.startDate || !formData.endDate) {
-      toast.error("Please select both start and end dates");
-      return;
-    }
-    
+
     setIsPlanning(true);
-    
+
     try {
-      // Prepare the data for the API
       const preferences = {
-        title: `Trip to ${formData.destination}`,
+        title: `Trip from ${formData.from} to ${formData.destination}`,
+        from: formData.from,
         destination: formData.destination,
         startDate: formData.startDate,
         endDate: formData.endDate,
@@ -59,55 +55,30 @@ const TravelPlanning = () => {
         budget: formData.budget,
         interests: selectedInterests
       };
-      
-      console.log("Sending trip generation request with:", preferences);
-      
-      // Call the API to generate the itinerary
+
       const result = await generateAIItinerary(preferences);
-      
-      console.log("Raw API Response:", result); // Debug log to see the actual response
-      console.log("Raw API Response keys:", Object.keys(result));
-      console.log("Raw API Response JSON:", JSON.stringify(result, null, 2));
-      console.log("result.success:", result.success);
-      console.log("result.data:", result.data);
-      console.log("result.data.trip:", result.data?.trip);
-      console.log("result.data.trip?._id:", result.data?.trip?._id);
-      
-      // Handle the double-wrapped response structure
       const actualData = result.data || result;
       const trip = actualData.trip;
-      
+
       if (result.success && trip?._id) {
         toast.success("Trip itinerary generated successfully!");
-        // Add a small delay to ensure the trip context is updated
         setTimeout(() => {
           navigate(`/planning/${trip._id}`);
         }, 100);
       } else {
-        // More detailed error feedback
         const errorMessage = actualData.error || actualData.message || "Failed to generate itinerary";
-        console.error("API Error Response:", result);
-        console.error("Condition failed - success:", result.success, "trip._id:", trip?._id);
         toast.error(errorMessage);
         setIsPlanning(false);
       }
     } catch (error) {
-      console.error("Error generating trip:", error);
-      
-      // Better error handling with more details
       let errorMessage = "An error occurred while generating your itinerary";
-      
-      if (error.message) {
-        errorMessage += `: ${error.message}`;
-      }
-      
-      // Check for specific error conditions
+
       if (error.message?.includes("API key")) {
         errorMessage = "API key configuration error. Please contact support.";
       } else if (error.message?.includes("Network Error")) {
         errorMessage = "Network error. Please check your internet connection and try again.";
       }
-      
+
       toast.error(errorMessage);
       setIsPlanning(false);
     }
@@ -139,9 +110,8 @@ const TravelPlanning = () => {
   return (
     <>
       {isPlanning && <TripGenerationLoader />}
-      
+
       <section id="travel-planning" className="py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
-        {/* Background decorations */}
         <div className="absolute top-0 left-0 w-full h-full opacity-30">
           <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
           <div className="absolute top-40 right-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -162,12 +132,9 @@ const TravelPlanning = () => {
             </p>
           </div>
 
-          {/* AI Itinerary Planning */}
           <div className="max-w-6xl mx-auto shadow-2xl border-0 bg-white/80 backdrop-blur-lg relative overflow-hidden rounded-xl">
-              {/* Card glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-blue-400/10 rounded-xl"></div>
-              
-              {/* Header */}
+
               <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 text-white rounded-t-xl relative overflow-hidden p-6">
                 <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
                 <div className="text-3xl flex items-center relative z-10">
@@ -180,10 +147,25 @@ const TravelPlanning = () => {
                   </div>
                 </div>
               </div>
-              
-              {/* Content */}
+
               <div className="p-10 relative">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+                  <div className="space-y-3 group">
+                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-lg mr-3">
+                        <MapPin className="h-4 w-4 text-white" />
+                      </div>
+                      From
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Your starting location"
+                      value={formData.from}
+                      onChange={(e) => handleInputChange('from', e.target.value)}
+                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
+                    />
+                  </div>
+
                   <div className="space-y-3 group">
                     <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
                       <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg mr-3">

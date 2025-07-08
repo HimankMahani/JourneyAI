@@ -128,9 +128,7 @@ export const tripService = {
 
   getTripById: async (id) => {
     try {
-      console.log('API: Fetching trip with ID:', id);
       const response = await api.get(`/trips/${id}`);
-      console.log('API: Trip fetch response:', response.data);
       return response.data;
     } catch (error) {
       console.error('API: Trip fetch error:', error);

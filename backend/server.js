@@ -63,17 +63,11 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 
-// Add a test route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
-});
-
-// Also add a health check at the root level
+// Health check route
 app.get('/', (req, res) => {
   res.json({ 
     status: 'ok',
-    message: 'JourneyAI Backend API is running',
-    timestamp: new Date().toISOString()
+    message: 'JourneyAI Backend API'
   });
 });
 

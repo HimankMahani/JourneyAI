@@ -97,7 +97,6 @@ export const usePlacePhoto = (placeName) => {
     
     // Check cache first
     if (photoCache.has(cacheKey)) {
-      console.log(`Using cached photo for ${place}:`, photoCache.get(cacheKey));
       setPhotoUrl(photoCache.get(cacheKey));
       return;
     }
@@ -105,7 +104,6 @@ export const usePlacePhoto = (placeName) => {
     // Check curated images first (same as Destinations tab)
     const curatedImage = getCuratedImage(place);
     if (curatedImage) {
-      console.log(`Using curated image for ${place}:`, curatedImage);
       photoCache.set(cacheKey, curatedImage);
       setPhotoUrl(curatedImage);
       return;
@@ -115,23 +113,18 @@ export const usePlacePhoto = (placeName) => {
     setError(null);
 
     try {
-      console.log(`Fetching photo for place: ${place}`);
       const response = await tripService.getPlacePhoto(place);
-      console.log(`API response for ${place}:`, response);
       
       if (response.success && response.photoUrl) {
-        console.log(`Got photo URL for ${place}:`, response.photoUrl);
         photoCache.set(cacheKey, response.photoUrl);
         setPhotoUrl(response.photoUrl);
       } else {
-        console.log(`No photo URL in response for ${place}, using fallback`);
         // Use high-quality fallback
         const fallbackUrl = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
         photoCache.set(cacheKey, fallbackUrl);
         setPhotoUrl(fallbackUrl);
       }
     } catch (err) {
-      console.error('Error fetching place photo:', err);
       setError(err.message);
       
       // Use high-quality fallback on error
@@ -208,7 +201,6 @@ export const usePlacePhotos = (places) => {
 
       setPhotos(newPhotos);
     } catch (err) {
-      console.error('Error fetching place photos:', err);
       setError(err.message);
       
       // Set high-quality fallbacks for all places on error

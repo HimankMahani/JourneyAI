@@ -164,6 +164,10 @@ const tripSchema = new mongoose.Schema({
   },
   estimatedCost: {
     type: Number
+  },
+  from: {
+    type: mongoose.Schema.Types.Mixed, // Can be string or object (city, country, full, etc.)
+    default: null
   }
 }, {
   timestamps: true

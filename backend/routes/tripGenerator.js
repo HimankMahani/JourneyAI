@@ -149,6 +149,7 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
 router.post('/itinerary', auth, async (req, res) => {
   try {
     const { 
+      from,
       destination, 
       startDate, 
       endDate, 
@@ -170,24 +171,24 @@ router.post('/itinerary', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     const userLocation = user?.location || null;
 
-    // Step 1: Generate travel itinerary using Gemini API with user location
+    // Use 'from' from request if provided, else fallback to userLocation
+    const fromLocation = from || userLocation;
+
+    // Step 1: Generate travel itinerary using Gemini API with fromLocation
     let generatedItinerary;
     let generatedLocalTips;
     
     try {
-      console.log('Generating itinerary for destination:', destination);
-      if (userLocation?.full) {
-        console.log('Including user location in generation:', userLocation.full);
-      }
-      
+      console.log('Generating itinerary from', fromLocation, 'to', destination);
       generatedItinerary = await generateTravelItinerary({
+        from: fromLocation,
         destination,
         startDate,
         endDate,
         interests,
         budget,
         travelers
-      }, userLocation);
+      }, fromLocation);
       console.log('Itinerary generated successfully');
       
       // Step 2: Generate local tips
@@ -204,7 +205,7 @@ router.post('/itinerary', auth, async (req, res) => {
     }
 
     // Step 3: Create a new trip with the generated itinerary
-    const tripTitle = title || `Trip to ${destination}`;
+    const tripTitle = title || `Trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`;
     
     // Debug logging for travelers
     console.log('Trip generation - travelers data:', {
@@ -217,12 +218,13 @@ router.post('/itinerary', auth, async (req, res) => {
     
     const newTrip = new Trip({
       title: tripTitle,
-      description: `AI-generated itinerary for a trip to ${destination}`,
+      description: `AI-generated itinerary for a trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`,
       user: req.userId,
       userEmail: req.user?.email || req.userEmail, // Add userEmail for easier querying
       startDate,
       endDate,
       destination: { name: destination },
+      from: fromLocation,
       budget: { 
         amount: budgetAmount,
         currency: 'INR'
@@ -254,13 +256,14 @@ router.post('/itinerary', auth, async (req, res) => {
         generatedItinerary, 
         'itinerary', 
         {
+          from: fromLocation,
           destination,
           startDate,
           endDate,
           interests,
           budget,
           travelers,
-          userLocation,
+          userLocation: fromLocation,
           prompt: 'AI-generated travel itinerary'
         }
       );
