@@ -27,7 +27,8 @@ const PORT = process.env.PORT || 5050;
 // Middleware
 app.use(cors({
   origin: [
-    'https://journey-ai-beta.vercel.app/login',
+    'https://journey-ai-beta.vercel.app',
+    'https://journey-12u0xy4d3-himankmahanis-projects.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174' 
   ],
@@ -51,6 +52,20 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
+
+// Add a test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
+});
+
+// Also add a health check at the root level
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    message: 'JourneyAI Backend API is running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Serve React frontend for all other routes (only for production)
 /*
