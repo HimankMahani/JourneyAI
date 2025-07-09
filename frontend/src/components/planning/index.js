@@ -4,8 +4,7 @@ import ActivityCard from './ActivityCard';
 import { 
   ItineraryTab, 
   PackingTab, 
-  DestinationInfoTab, 
-  OverviewTab 
+  DestinationInfoTab
 } from './tabs';
 
 export {
@@ -14,6 +13,5 @@ export {
   ItineraryTab,
   PackingTab,
   DestinationInfoTab,
-  OverviewTab,
   ActivityCard
 };

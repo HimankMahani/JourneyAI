@@ -93,24 +93,34 @@ export const TripProvider = ({ children }) => {
   const generateAIItinerary = useCallback(async (preferences) => {
     try {
       setLoading(true);
-      const itinerary = await tripService.generateAIItinerary(preferences);
+      const response = await tripService.generateAIItinerary(preferences);
+      console.log('generateAIItinerary response:', response);
+      
+      // Handle different response structures:
+      // 1. { success: true, data: { ...tripData } } - current format
+      // 2. { success: true, trip: { ...tripData } } - previous format
+      // 3. Direct trip object
+      const trip = response.data || response.trip || response;
       
       // Immediately set the generated trip as current trip to avoid fetch issues
-      if (itinerary && itinerary.trip) {
-        setCurrentTrip(itinerary.trip);
-        console.log('TripContext: Set generated trip as current trip:', itinerary.trip._id);
+      if (trip) {
+        console.log('Setting current trip:', trip);
+        setCurrentTrip(trip);
+        console.log('TripContext: Set generated trip as current trip:', trip._id);
         
         // Also add to trips list if not already there
         setTrips(prev => {
-          const existingTrip = prev.find(t => t._id === itinerary.trip._id);
-          if (!existingTrip) {
-            return [...prev, itinerary.trip];
+          const exists = prev.some(t => t._id === trip._id);
+          if (!exists) {
+            return [...prev, trip];
           }
-          return prev.map(t => t._id === itinerary.trip._id ? itinerary.trip : t);
+          return prev;
         });
+        
+        return { success: true, trip };
       }
       
-      return { success: true, data: itinerary };
+      return { success: true, data: trip };
     } catch (err) {
       console.error('Error generating AI itinerary:', err);
       // Return more detailed error information

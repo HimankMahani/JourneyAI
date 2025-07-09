@@ -92,38 +92,38 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
   };
 
   return (
-    <Card className="border-0 shadow-2xl overflow-hidden">
-      <CardContent className="p-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-4">
+    <Card className="border-0 shadow-2xl overflow-hidden w-full">
+      <CardContent className="p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4 flex-1 min-w-0">
             <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700">
               <Sparkles className="w-4 h-7 mr-2" />
               AI Generated Itinerary
             </Badge>
-            <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent break-words">
               Trip to {trip.destination?.name || 'Unknown Destination'}
             </h1>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center space-x-3 bg-white/80 px-4 py-3 rounded-xl border shadow-lg">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/80 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border shadow-lg">
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <span className="font-semibold">{formatDateRange(trip.startDate, trip.endDate)}</span>
               </div>
-              <div className="flex items-center space-x-3 bg-white/80 px-4 py-3 rounded-xl border shadow-lg">
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/80 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border shadow-lg">
                 <Clock className="h-5 w-5 text-green-600" />
                 <span className="font-semibold">{calculateDuration(trip.startDate, trip.endDate)}</span>
               </div>
-              <div className="flex items-center space-x-3 bg-white/80 px-4 py-3 rounded-xl border shadow-lg">
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/80 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border shadow-lg">
                 <Star className="h-5 w-5 text-purple-600" />
                 <span className="font-semibold">{getTravelersCount(trip)}</span>
               </div>
             </div>
           </div>
-          <div className="text-center lg:text-right space-y-4">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl p-6 shadow-xl">
-              <div className="text-3xl lg:text-4xl font-bold">{formatBudget(trip.budget)}</div>
+          <div className="text-center lg:text-right space-y-3 sm:space-y-4 mt-4 lg:mt-0 lg:pl-4">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg sm:shadow-xl">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold whitespace-nowrap">{formatBudget(trip.budget)}</div>
               <div className="text-green-100 font-medium">Total Budget</div>
             </div>
-            <div className="flex gap-2 justify-center lg:justify-end">
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-end">
               <Button 
                 size="sm" 
                 variant="outline"

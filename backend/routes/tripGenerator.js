@@ -172,7 +172,24 @@ router.post('/itinerary', auth, async (req, res) => {
     const userLocation = user?.location || null;
 
     // Use 'from' from request if provided, else fallback to userLocation
-    const fromLocation = from || userLocation;
+    let fromLocation = from || userLocation;
+    
+    // If fromLocation is a string, convert it to the expected object format
+    if (typeof fromLocation === 'string') {
+      const locationParts = fromLocation.split(',').map(part => part.trim());
+      fromLocation = {
+        city: locationParts[0] || 'Unknown',
+        country: locationParts[locationParts.length - 1] || 'Unknown',
+        full: fromLocation
+      };
+    } else if (!fromLocation) {
+      // If still no location, use a default
+      fromLocation = {
+        city: 'Unknown',
+        country: 'Unknown',
+        full: 'Unknown'
+      };
+    }
 
     // Step 1: Generate travel itinerary using Gemini API with fromLocation
     let generatedItinerary;
@@ -275,7 +292,8 @@ router.post('/itinerary', auth, async (req, res) => {
         'tips', 
         {
           destination,
-          prompt: 'AI-generated local tips'
+          prompt: 'AI-generated local tips',
+          userLocation: fromLocation
         }
       );
       
@@ -289,17 +307,17 @@ router.post('/itinerary', auth, async (req, res) => {
     }
 
     // Parse the itinerary from MongoDB storage
+    let parsedItinerary = [];
     try {
       const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
       
       if (storedItinerary) {
         console.log('Retrieved stored AI response for parsing');
         
-        const parsedItinerary = parseStoredAIResponse(storedItinerary, startDate);
+        parsedItinerary = parseStoredAIResponse(storedItinerary, startDate);
         
         if (parsedItinerary && parsedItinerary.length > 0) {
           console.log('Successfully parsed itinerary with', parsedItinerary.length, 'days');
-          
           // Validate the parsed itinerary
           const validation = validateItinerary(parsedItinerary);
           if (validation.isValid) {
@@ -325,27 +343,14 @@ router.post('/itinerary', auth, async (req, res) => {
     // Save the updated trip with parsed itinerary
     const finalTrip = await savedTrip.save();
 
-    console.log('Final trip structure:', {
-      _id: finalTrip._id,
-      title: finalTrip.title,
-      destination: finalTrip.destination,
-      budget: finalTrip.budget,
-      itineraryDays: finalTrip.itinerary ? finalTrip.itinerary.length : 0
-    });
-
+    // Ensure the response always includes the itinerary (even if empty)
     const responseData = {
       success: true,
       message: 'Trip itinerary generated successfully',
       trip: finalTrip.toObject()
     };
 
-    console.log('Sending response:', {
-      success: responseData.success,
-      message: responseData.message,
-      tripId: responseData.trip._id,
-      tripExists: !!responseData.trip
-    });
-
+    // Only send the response after parsing and saving the itinerary
     res.status(201).json(responseData);
   } catch (error) {
     console.error('Trip generation error:', error);

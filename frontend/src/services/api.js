@@ -167,8 +167,10 @@ export const tripService = {
   generateAIItinerary: async (preferences) => {
     try {
       const response = await api.post('/generator/itinerary', preferences);
-      return response.data;
+      // Return the trip data directly since the backend wraps it in a 'trip' property
+      return response.data.trip || response.data;
     } catch (error) {
+      console.error('Error generating AI itinerary:', error.response?.data || error.message);
       throw error.response ? error.response.data : new Error('Network Error');
     }
   },
@@ -176,8 +178,10 @@ export const tripService = {
   regenerateTripItinerary: async (tripId, preferences) => {
     try {
       const response = await api.post(`/generator/update-itinerary/${tripId}`, preferences);
-      return response.data;
+      // Return the trip data directly for consistency with generateAIItinerary
+      return response.data.trip || response.data;
     } catch (error) {
+      console.error('Error regenerating trip itinerary:', error.response?.data || error.message);
       throw error.response ? error.response.data : new Error('Network Error');
     }
   },
@@ -267,10 +271,43 @@ export const weatherService = {
 export const aiService = {
   getDestinationInfo: async (destination) => {
     try {
-      const response = await api.post('/ai/destination-info', { destination });
+      // Extract destination name using the same logic as getDestinationName
+      let destinationName = '';
+      if (!destination) {
+        throw new Error('No destination provided');
+      } else if (typeof destination === 'string') {
+        destinationName = destination;
+      } else if (typeof destination === 'object' && destination.name) {
+        destinationName = destination.name;
+      } else {
+        destinationName = String(destination);
+      }
+      
+      // Clean up the destination name (remove any trailing commas and extra spaces)
+      destinationName = destinationName.split(',').map(part => part.trim())[0];
+      
+      if (!destinationName || destinationName === 'undefined') {
+        throw new Error('Invalid destination format');
+      }
+      
+      console.log('Fetching destination info for:', destinationName);
+      
+      const response = await api.post('/ai/destination-info', { 
+        toDestination: destinationName,
+        // Include additional parameters that the backend might expect
+        fromLocation: 'Unknown',
+        days: 7,
+        travelers: 1
+      });
+      
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
+      console.error('Error in getDestinationInfo:', {
+        error: error.message,
+        destination,
+        response: error.response?.data
+      });
+      throw error.response?.data || new Error(error.message || 'Failed to fetch destination info');
     }
   },
   

@@ -6,8 +6,8 @@ const router = express.Router();
 
 // @route   GET /api/weather/current
 // @desc    Get current weather for a location
-// @access  Private
-router.get('/current', auth, async (req, res) => {
+// @access  Public
+router.get('/current', async (req, res) => {
   try {
     const { lat, lon, city } = req.query;
     
@@ -18,12 +18,24 @@ router.get('/current', auth, async (req, res) => {
     let url;
     
     if (city) {
-      url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`;
+      // Clean up the city name - take only the first part before comma
+      const cleanCity = city.split(',')[0].trim();
+      // Allow both city and country names by sending directly to OpenWeather API
+      url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cleanCity)}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`;
     } else {
       url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`;
     }
     
-    const response = await axios.get(url);
+    let response;
+    try {
+      response = await axios.get(url);
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 404) {
+        return res.status(404).json({ message: 'City not found. Please provide a valid city name.' });
+      }
+      // Other errors (network, API key, etc.)
+      return res.status(500).json({ message: apiError.message });
+    }
     
     // Process response to format we want
     const weather = {
@@ -59,8 +71,8 @@ router.get('/current', auth, async (req, res) => {
 
 // @route   GET /api/weather/forecast
 // @desc    Get 5-day weather forecast for a location
-// @access  Private
-router.get('/forecast', auth, async (req, res) => {
+// @access  Public
+router.get('/forecast', async (req, res) => {
   try {
     const { lat, lon, city } = req.query;
     

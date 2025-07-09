@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTrip } from '@/contexts/useTrip';
 
@@ -8,7 +8,6 @@ import TabNavigation from '@/components/planning/TabNavigation';
 import ItineraryTab from '@/components/planning/tabs/ItineraryTab';
 import PackingTab from '@/components/planning/tabs/PackingTab';
 import DestinationInfoTab from '@/components/planning/tabs/DestinationInfoTab';
-import OverviewTab from '@/components/planning/tabs/OverviewTab';
 import { TripGenerationLoader } from '@/components/ui/PlanningPageSkeleton';
 import { toast } from 'sonner';
 import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
@@ -19,11 +18,7 @@ import {
   selectedTrip as mockTrip,
   itinerary as mockItinerary,
   packingList as mockPackingList,
-  destinationInfo as mockDestinationInfo,
-  travelTimeline,
-  budgetBreakdown,
-  documentChecklist,
-  emergencyContacts
+  destinationInfo as mockDestinationInfo
 } from '@/data/tripData';
 
 // Utility function to ensure itinerary has proper structure
@@ -132,7 +127,14 @@ const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
   const { currentTrip, fetchTripById, regenerateTripItinerary } = useTrip();
   
-  const [isLoading, setIsLoading] = useState(true);
+  console.log('Planning: Component loaded with tripId:', tripId);
+  console.log('Planning: currentTrip available:', !!currentTrip);
+  if (currentTrip) {
+    console.log('Planning: currentTrip ID:', currentTrip._id || currentTrip.id);
+    console.log('Planning: currentTrip has itinerary:', !!(currentTrip.itinerary && currentTrip.itinerary.length > 0));
+  }
+  
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [checkedItems, setCheckedItems] = useState({});
   const [favoriteActivities, setFavoriteActivities] = useState({});
@@ -145,56 +147,98 @@ const Planning = () => {
   const [itinerary, setItinerary] = useState(null);
   const [packingList, setPackingList] = useState(null);
   const [destinationInfo, setDestinationInfo] = useState(null);
-  const [tripLoaded, setTripLoaded] = useState(false);
   const [weather, setWeather] = useState(null);
 
-  const loadTrip = useCallback(async (tripId) => {
-    console.log('Planning: Loading trip with ID:', tripId);
-    
-    // First check if currentTrip already matches the requested tripId
-    if (currentTrip && (currentTrip._id === tripId || currentTrip.id === tripId)) {
-      console.log('Planning: Using existing currentTrip, no fetch needed');
-      setTripLoaded(true);
-      setIsLoading(false);
-      return currentTrip;
+  // Handle initial trip loading when tripId is provided but currentTrip is not set
+  useEffect(() => {
+    if (tripId && !currentTrip && !isLoading) {
+      console.log('Planning: tripId provided but no currentTrip, fetching trip:', tripId);
+      setIsLoading(true);
+      fetchTripById(tripId)
+        .then(fetchedTrip => {
+          if (fetchedTrip) {
+            console.log('Planning: Successfully fetched trip on initial load:', fetchedTrip);
+            // The context should update currentTrip automatically
+          } else {
+            console.error('Planning: Failed to fetch trip on initial load');
+            toast.error('Trip not found');
+            // Fall back to mock data
+            setTrip(normalizeTrip(mockTrip));
+            setItinerary(normalizeItinerary(mockItinerary));
+            setPackingList(mockPackingList);
+            setDestinationInfo(mockDestinationInfo);
+          }
+        })
+        .catch(error => {
+          console.error('Planning: Error fetching trip on initial load:', error);
+          toast.error('Failed to load trip details');
+          // Fall back to mock data
+          setTrip(normalizeTrip(mockTrip));
+          setItinerary(normalizeItinerary(mockItinerary));
+          setPackingList(mockPackingList);
+          setDestinationInfo(mockDestinationInfo);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-    
-    setIsLoading(true);
-    try {
-      const fetchedTrip = await fetchTripById(tripId);
-      console.log('Planning: Trip loaded successfully:', fetchedTrip);
-      if (fetchedTrip) {
-        console.log('Planning: Trip itinerary structure:', fetchedTrip.itinerary);
-        if (fetchedTrip.itinerary) {
-          console.log('Planning: First activity in itinerary:', fetchedTrip.itinerary[0]?.activities[0]);
-        }
-        setTripLoaded(true);
-        return fetchedTrip;
-      } else {
-        console.error('Planning: fetchTripById returned null');
-        toast.error('Trip not found');
-        return null;
-      }
-    } catch (error) {
-      console.error('Planning: Failed to load trip:', error);
-      toast.error('Failed to load trip details');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchTripById, currentTrip]);
+  }, [tripId, currentTrip, isLoading, fetchTripById]);
 
+  /*
   useEffect(() => {
     // Only fetch if we have a tripId, don't have a matching currentTrip, and haven't loaded this trip yet
     if (tripId && !tripLoaded) {
-      // Check if currentTrip already matches
+      // Check if currentTrip already matches AND has itinerary data
       if (currentTrip && (currentTrip._id === tripId || currentTrip.id === tripId)) {
-        console.log('Planning: currentTrip already matches tripId, no fetch needed');
-        setTripLoaded(true);
-        setIsLoading(false);
+        const hasItinerary = currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0;
+        
+        if (hasItinerary) {
+          console.log('Planning: currentTrip already matches tripId with itinerary, no fetch needed');
+          setTripLoaded(true);
+          setIsLoading(false);
+        } else {
+          console.log('Planning: currentTrip matches tripId but has no itinerary, fetching fresh data');
+          // Inline the loadTrip logic to avoid circular dependency
+          setIsLoading(true);
+          setTripLoaded(true); // Set this immediately to prevent race conditions
+          fetchTripById(tripId)
+            .then(fetchedTrip => {
+              if (fetchedTrip) {
+                console.log('Planning: Successfully fetched trip with itinerary');
+              } else {
+                console.error('Planning: fetchTripById returned null');
+                toast.error('Trip not found');
+              }
+            })
+            .catch(error => {
+              console.error('Planning: Failed to load trip:', error);
+              toast.error('Failed to load trip details');
+            })
+            .finally(() => {
+              setIsLoading(false);
+            });
+        }
       } else {
         console.log('Planning: Need to fetch trip, currentTrip does not match tripId');
-        loadTrip(tripId);
+        // Inline the loadTrip logic to avoid circular dependency
+        setIsLoading(true);
+        setTripLoaded(true); // Set this immediately to prevent race conditions
+        fetchTripById(tripId)
+          .then(fetchedTrip => {
+            if (fetchedTrip) {
+              console.log('Planning: Successfully fetched trip with itinerary');
+            } else {
+              console.error('Planning: fetchTripById returned null');
+              toast.error('Trip not found');
+            }
+          })
+          .catch(error => {
+            console.error('Planning: Failed to load trip:', error);
+            toast.error('Failed to load trip details');
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
       }
     }
     
@@ -225,15 +269,14 @@ const Planning = () => {
     }, 10000); // 10 second timeout
     
     return () => clearTimeout(timeoutId);
-  }, [tripId, tripLoaded, loadTrip, isLoading, currentTrip]);
-  
+  }, [tripId, tripLoaded, isLoading, currentTrip, fetchTripById]);
+  */
+
   useEffect(() => {
-    console.log('Planning: currentTrip changed:', currentTrip);
-    console.log('Planning: tripId:', tripId);
-    
-    // Use backend data if available, otherwise fall back to mock data
-    if (currentTrip) {
+    // Don't process currentTrip if we're currently loading
+    if (currentTrip && !isLoading) {
       console.log('Planning: Using currentTrip data');
+      console.log('Planning: currentTrip:', currentTrip);
       console.log('Planning: currentTrip.itinerary:', currentTrip.itinerary);
       
       // Check if currentTrip matches the requested tripId
@@ -241,36 +284,28 @@ const Planning = () => {
         console.log('Planning: currentTrip matches requested tripId, using directly');
         setTrip(normalizeTrip(currentTrip));
         
-        // If trip has itinerary, use it; otherwise fall back to mock data
+        // If trip has itinerary, use it; otherwise fall back to pre-generated or mock data
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
           console.log('Planning: Using real itinerary from trip');
-          setItinerary(normalizeItinerary(currentTrip.itinerary));
+          console.log('Planning: Raw itinerary:', currentTrip.itinerary);
+          const normalizedItinerary = normalizeItinerary(currentTrip.itinerary);
+          console.log('Planning: Normalized itinerary:', normalizedItinerary);
+          setItinerary(normalizedItinerary);
         } else {
-          console.log('Planning: Trip has no itinerary, checking for pre-generated itinerary');
-          
+          console.log('Planning: Trip has no itinerary, using fallback');
           // Try to get pre-generated itinerary for this destination
           const destinationName = currentTrip.destination?.name || currentTrip.destination || '';
-          console.log('Planning: Destination name from trip:', destinationName);
-          
           const preGeneratedItinerary = getPreGeneratedItinerary(destinationName);
-          console.log('Planning: Pre-generated itinerary found:', !!preGeneratedItinerary);
           
           if (preGeneratedItinerary) {
-            console.log('Planning: Using pre-generated itinerary for:', destinationName);
-            console.log('Planning: Pre-generated itinerary has', preGeneratedItinerary.itinerary.length, 'days');
             setItinerary(normalizeItinerary(preGeneratedItinerary.itinerary));
-            
-            // Show a toast about using pre-generated itinerary
             setTimeout(() => {
               toast.success(`Using pre-planned itinerary for ${destinationName}!`, {
                 duration: 5000
               });
             }, 1000);
           } else {
-            console.log('Planning: No pre-generated itinerary found, using mock data');
             setItinerary(normalizeItinerary(mockItinerary));
-            
-            // Show a toast suggesting to generate itinerary for this trip
             setTimeout(() => {
               toast.info('This trip doesn\'t have an AI-generated itinerary. Click "Regenerate" to create one!', {
                 duration: 8000
@@ -282,13 +317,15 @@ const Planning = () => {
         setPackingList(currentTrip.packingList || mockPackingList);
         setDestinationInfo(currentTrip.destinationInfo || mockDestinationInfo);
         setIsLoading(false);
-        setTripLoaded(true);
       } else if (!tripId) {
         console.log('Planning: No tripId provided, using currentTrip');
+        console.log('Planning: currentTrip for no tripId:', currentTrip);
         // No tripId but we have currentTrip, use it
         setTrip(normalizeTrip(currentTrip));
         
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
+          console.log('Planning: Using real itinerary from currentTrip (no tripId)');
+          console.log('Planning: currentTrip.itinerary:', currentTrip.itinerary);
           setItinerary(normalizeItinerary(currentTrip.itinerary));
         } else {
           // Try to get pre-generated itinerary for this destination
@@ -307,9 +344,23 @@ const Planning = () => {
         setPackingList(currentTrip.packingList || mockPackingList);
         setDestinationInfo(currentTrip.destinationInfo || mockDestinationInfo);
         setIsLoading(false);
-        setTripLoaded(true);
+      } else {
+        console.log('Planning: tripId provided but currentTrip does not match');
+        console.log('Planning: tripId:', tripId);
+        console.log('Planning: currentTrip._id:', currentTrip._id);
+        console.log('Planning: currentTrip.id:', currentTrip.id);
+        // This case should be handled by the initial fetch useEffect above
+        // But we can set the trip data if we have a valid currentTrip that doesn't match
+        if (currentTrip._id || currentTrip.id) {
+          console.log('Planning: Using currentTrip data even though IDs don\'t match');
+          setTrip(normalizeTrip(currentTrip));
+          setItinerary(normalizeItinerary(currentTrip.itinerary || mockItinerary));
+          setPackingList(currentTrip.packingList || mockPackingList);
+          setDestinationInfo(currentTrip.destinationInfo || mockDestinationInfo);
+          setIsLoading(false);
+        }
       }
-    } else if (!tripId) {
+    } else if (!tripId && !currentTrip) {
       console.log('Planning: Using mock data (no tripId and no currentTrip)');
       // Only use mock data if there's no tripId and no currentTrip
       setTrip(normalizeTrip(mockTrip));
@@ -317,9 +368,8 @@ const Planning = () => {
       setPackingList(mockPackingList);
       setDestinationInfo(mockDestinationInfo);
       setIsLoading(false);
-      setTripLoaded(true);
     }
-  }, [currentTrip, tripId]);
+  }, [currentTrip, tripId, isLoading, fetchTripById]);
 
   useEffect(() => {
     // Fetch weather info when trip is loaded
@@ -387,14 +437,35 @@ const Planning = () => {
         interests: Array.from(new Set(interests)) // Remove duplicates
       });
       
+      console.log('Planning: Regenerate result:', result);
+      
       if (result.success) {
-        // Update the local state with the new data
-        setTrip(normalizeTrip(result.data));
-        setItinerary(normalizeItinerary(result.data.itinerary) || normalizeItinerary(mockItinerary));
-        toast.success("Itinerary regenerated successfully!");
-        // Switch to the itinerary tab to show the new plan
-        setActiveTab('itinerary');
+        // Handle different response structures from TripContext
+        const updatedTrip = result.data || result.trip || currentTrip;
+        console.log('Planning: Updated trip from regenerate:', updatedTrip);
+        
+        if (updatedTrip) {
+          // Update the local state with the new data
+          setTrip(normalizeTrip(updatedTrip));
+          
+          // Check if the updated trip has an itinerary
+          if (updatedTrip.itinerary && Array.isArray(updatedTrip.itinerary) && updatedTrip.itinerary.length > 0) {
+            setItinerary(normalizeItinerary(updatedTrip.itinerary));
+            toast.success("Itinerary regenerated successfully!");
+          } else {
+            // Fallback to mock data if no itinerary in response
+            setItinerary(normalizeItinerary(mockItinerary));
+            toast.success("Trip updated successfully! Using fallback itinerary.");
+          }
+          
+          // Switch to the itinerary tab to show the new plan
+          setActiveTab('itinerary');
+        } else {
+          console.error('Planning: No trip data in regenerate response');
+          toast.error("Failed to get updated trip data");
+        }
       } else {
+        console.error('Planning: Regenerate failed:', result.error);
         toast.error(result.error || "Failed to regenerate itinerary");
       }
     } catch (error) {
@@ -429,7 +500,7 @@ const Planning = () => {
         {/* Tabs Section */}
         <div className="space-y-8">
           {/* Tab Navigation */}
-          <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           
           {/* Tab Content */}
           
@@ -466,19 +537,6 @@ const Planning = () => {
               destinationInfo={destinationInfo}
               weather={weather}
               trip={trip}
-            />
-          )}
-
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <OverviewTab 
-              trip={trip}
-              itinerary={itinerary}
-              weatherOverview={weather}
-              travelTimeline={travelTimeline}
-              budgetBreakdown={budgetBreakdown}
-              documentChecklist={documentChecklist}
-              emergencyContacts={emergencyContacts}
             />
           )}
         </div>

@@ -24,8 +24,15 @@ const TravelPlanning = () => {
   });
 
   useEffect(() => {
-    if (user && user.location && !formData.from) {
-      setFormData(prev => ({ ...prev, from: user.location }));
+    if (user && !formData.from) {
+      // Safely extract location from user object
+      const userLocation = user.location?.name || user.location?.city || user.location;
+      if (userLocation) {
+        setFormData(prev => ({ 
+          ...prev, 
+          from: typeof userLocation === 'string' ? userLocation : '' 
+        }));
+      }
     }
   }, [user]);
 
@@ -57,16 +64,23 @@ const TravelPlanning = () => {
       };
 
       const result = await generateAIItinerary(preferences);
-      const actualData = result.data || result;
-      const trip = actualData.trip;
+      console.log('Trip generation result:', result);
+      
+      // Handle all response formats:
+      // 1. { success: true, data: { ...tripData } } (current format)
+      // 2. { success: true, trip: { ...tripData } } (previous format)
+      // 3. Direct trip object with _id (direct format)
+      const trip = result.data || result.trip || result;
 
-      if (result.success && trip?._id) {
+      if ((result.success || trip?._id) && trip?._id) {
+        console.log('Trip data:', trip);
         toast.success("Trip itinerary generated successfully!");
         setTimeout(() => {
           navigate(`/planning/${trip._id}`);
         }, 100);
       } else {
-        const errorMessage = actualData.error || actualData.message || "Failed to generate itinerary";
+        const errorMessage = result.error || result.message || "Failed to generate itinerary";
+        console.error('Trip generation failed:', errorMessage, result);
         toast.error(errorMessage);
         setIsPlanning(false);
       }

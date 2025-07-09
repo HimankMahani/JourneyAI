@@ -11,6 +11,7 @@ import tripRoutes from './routes/trips.js';
 import locationRoutes from './routes/locations.js';
 import weatherRoutes from './routes/weather.js';
 import aiRoutes from './routes/ai.js';
+import aiDestinationInfoRoutes from './routes/aiDestinationInfo.js';
 import userRoutes from './routes/users.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
 import { fileURLToPath } from 'url';
@@ -60,6 +61,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiDestinationInfoRoutes); // Add destination-info endpoint to /api/ai path
 app.use('/api/users', userRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 

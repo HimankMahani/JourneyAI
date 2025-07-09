@@ -331,4 +331,246 @@ router.post('/estimate-enhanced-trip-costs', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/ai/estimate-enhanced-trip-costs
+// @desc    Get AI-generated cost estimates with itinerary details
+// @access  Public
+router.post('/estimate-enhanced-trip-costs', async (req, res) => {
+  try {
+    const { fromLocation, toDestination, days, travelers, itinerary } = req.body;
+    
+    if (!fromLocation || !toDestination) {
+      return res.status(400).json({ message: 'Please provide both origin and destination locations' });
+    }
+    
+    const numDays = parseInt(days) || 5;
+    const numTravelers = parseInt(travelers) || 1;
+    
+    // Format the prompt for the AI with itinerary details if available
+    let itineraryText = '';
+    if (itinerary && Array.isArray(itinerary) && itinerary.length > 0) {
+      itineraryText = 'Based on the following itinerary:\n\n';
+      
+      itinerary.forEach((day, idx) => {
+        itineraryText += `Day ${idx + 1}:\n`;
+        
+        if (day.activities && Array.isArray(day.activities)) {
+          day.activities.forEach(activity => {
+            const title = activity.title || 'Activity';
+            const type = activity.type || '';
+            
+            itineraryText += `- ${title} (${type})\n`;
+          });
+        }
+        
+        itineraryText += '\n';
+      });
+    }
+    
+    const prompt = `
+    ${itineraryText}
+    Please provide a detailed cost estimate for a trip from ${fromLocation} to ${toDestination} for ${numTravelers} traveler(s) over ${numDays} days.
+    
+    Return the response as a JSON object with:
+    1. totalEstimate: The total estimated cost in INR (₹)
+    2. breakdown: A breakdown of costs by category:
+       - flights: Round-trip flight costs
+       - accommodation: Hotel or lodging costs for the entire stay
+       - food: Total food costs for all meals
+       - localTransport: Costs for local transportation (taxis, buses, trains)
+       - activities: Costs for attractions, tours, and activities
+       - shopping: Estimated shopping expenses
+       - misc: Other miscellaneous expenses
+    
+    Format the output as valid JSON like this:
+    {
+      "totalEstimate": 150000,
+      "breakdown": {
+        "flights": 60000,
+        "accommodation": 40000,
+        "food": 20000,
+        "localTransport": 10000,
+        "activities": 15000,
+        "shopping": 5000,
+        "misc": 2000
+      },
+      "currency": "INR"
+    }
+    `;
+    
+    // Call Gemini API
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.data.candidates || response.data.candidates.length === 0) {
+      return res.status(500).json({ message: 'Failed to generate cost estimates' });
+    }
+    
+    const aiText = response.data.candidates[0].content.parts[0].text;
+    
+    // Try to parse JSON response from AI
+    try {
+      // Find JSON content within the response
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonContent = JSON.parse(jsonMatch[0]);
+        return res.json(jsonContent);
+      }
+      
+      // If no JSON found, return a reasonable default estimate
+      return res.json({
+        totalEstimate: 150000,
+        breakdown: {
+          flights: 60000,
+          accommodation: 40000,
+          food: 20000,
+          localTransport: 10000,
+          activities: 15000,
+          shopping: 5000,
+          misc: 2000
+        },
+        currency: "INR",
+        note: "Default estimate. AI could not generate a specific estimate."
+      });
+    } catch (jsonError) {
+      console.error('Error parsing AI response as JSON:', jsonError);
+      // Return default values
+      return res.json({
+        totalEstimate: 150000,
+        breakdown: {
+          flights: 60000,
+          accommodation: 40000,
+          food: 20000,
+          localTransport: 10000,
+          activities: 15000,
+          shopping: 5000,
+          misc: 2000
+        },
+        currency: "INR",
+        note: "Default estimate. AI could not generate a specific estimate."
+      });
+    }
+  } catch (error) {
+    console.error('Error in cost estimation endpoint:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/ai/destination-info
+// @desc    Get AI-generated destination information
+// @access  Public
+router.post('/destination-info', async (req, res) => {
+  try {
+    const { destination } = req.body;
+    
+    if (!destination) {
+      return res.status(400).json({ message: 'Please provide a destination' });
+    }
+    
+    // Format the destination name
+    let destinationName = '';
+    if (typeof destination === 'string') {
+      destinationName = destination;
+    } else if (typeof destination === 'object' && destination.name) {
+      destinationName = destination.name;
+    } else {
+      destinationName = String(destination);
+    }
+    
+    // Format the prompt for the AI
+    const prompt = `
+    Please provide the following information about ${destinationName} as a travel destination:
+    1. A brief description of the cultural aspects and interesting facts (2-3 sentences)
+    2. Three practical local tips for travelers visiting this destination
+    3. A list of three must-visit attractions or experiences
+    
+    Format the response as JSON with these fields:
+    {
+      "culturalInfo": "Cultural information here...",
+      "localTips": "Local tips here...",
+      "mustVisit": ["Attraction 1", "Attraction 2", "Attraction 3"]
+    }
+    `;
+    
+    // Call Gemini API
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.data.candidates || response.data.candidates.length === 0) {
+      return res.status(500).json({ message: 'Failed to generate destination information' });
+    }
+    
+    const aiText = response.data.candidates[0].content.parts[0].text;
+    
+    // Try to parse JSON response from AI
+    try {
+      // Find JSON content within the response
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonContent = JSON.parse(jsonMatch[0]);
+        return res.json(jsonContent);
+      }
+      
+      // If no JSON found, return a formatted response
+      return res.json({
+        culturalInfo: `${destinationName} is a fascinating travel destination with rich history and culture.`,
+        localTips: `When visiting ${destinationName}, be sure to try the local cuisine, respect local customs, and check weather conditions before your trip.`,
+        mustVisit: [`${destinationName} Old Town`, `${destinationName} Museum`, `${destinationName} Gardens`]
+      });
+    } catch (jsonError) {
+      console.error('Error parsing AI response as JSON:', jsonError);
+      // Return a default structured response
+      return res.json({
+        culturalInfo: `${destinationName} is a fascinating travel destination with rich history and culture.`,
+        localTips: `When visiting ${destinationName}, be sure to try the local cuisine, respect local customs, and check weather conditions before your trip.`,
+        mustVisit: [`${destinationName} Old Town`, `${destinationName} Museum`, `${destinationName} Gardens`]
+      });
+    }
+  } catch (error) {
+    console.error('Error in destination-info endpoint:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
