@@ -14,7 +14,6 @@ const SignUp = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -32,8 +31,6 @@ const SignUp = () => {
         return value.trim().length < 2 ? 'First name must be at least 2 characters' : '';
       case 'lastName':
         return value.trim().length < 2 ? 'Last name must be at least 2 characters' : '';
-      case 'username':
-        return value.trim().length < 3 ? 'Username must be at least 3 characters' : '';
       case 'email': {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return !emailRegex.test(value) ? 'Please enter a valid email address' : '';
@@ -78,7 +75,6 @@ const SignUp = () => {
       // Step 1: Personal Information
       newErrors.firstName = validateField('firstName', formData.firstName);
       newErrors.lastName = validateField('lastName', formData.lastName);
-      newErrors.username = validateField('username', formData.username);
     } else if (currentStep === 2) {
       // Step 2: Account Details
       newErrors.email = validateField('email', formData.email);
@@ -241,31 +237,6 @@ const SignUp = () => {
                       <div className="flex items-center text-red-500 text-sm mt-1">
                         <AlertCircle className="h-4 w-4 mr-1" />
                         {errors.lastName}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Username */}
-                  <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
-                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg mr-3">
-                        <Users className="h-4 w-4 text-white" />
-                      </div>
-                      Username
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Choose a unique username"
-                      value={formData.username}
-                      onChange={(e) => handleInputChange('username', e.target.value)}
-                      onBlur={() => handleBlur('username')}
-                      className={`w-full border-2 ${errors.username ? 'border-red-300' : 'border-gray-200'} focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300`}
-                      required
-                    />
-                    {errors.username && (
-                      <div className="flex items-center text-red-500 text-sm mt-1">
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        {errors.username}
                       </div>
                     )}
                   </div>
