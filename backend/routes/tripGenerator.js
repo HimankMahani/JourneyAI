@@ -76,10 +76,10 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
   
   // Base daily rates by budget level (per person in INR)
   const dailyRatesByLevel = {
-    'economy': 5000,
-    'budget': 8000,
-    'mid-range': 12000,
-    'luxury': 25000
+    'economy': 3000,    // Lowered from 5000
+    'budget': 5000,     // Lowered from 8000
+    'mid-range': 8000,  // Lowered from 12000
+    'luxury': 15000    // Lowered from 25000
   };
   
   // Destination cost factors (relative to 1.0 baseline)
