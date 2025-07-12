@@ -2,7 +2,25 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ActivityCard from '../ActivityCard';
-import { HiCalendar, HiOutlineCalendar } from 'react-icons/hi';
+
+// Replace imported icons with inline SVG components
+const CalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
+
+const OutlineCalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
 
 const ItineraryTab = ({ 
   itinerary,
@@ -13,7 +31,7 @@ const ItineraryTab = ({
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <div className="w-16 h-16 mb-4 rounded-full bg-blue-100 flex items-center justify-center">
-          <HiOutlineCalendar className="w-8 h-8 text-blue-600" />
+          <OutlineCalendarIcon /> {/* Use custom SVG component instead of HiOutlineCalendar */}
         </div>
         <h3 className="text-xl font-semibold text-gray-900">No itinerary available</h3>
         <p className="mt-2 text-gray-500 text-center max-w-md">
@@ -38,7 +56,7 @@ const ItineraryTab = ({
               <CardTitle className="text-white flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="bg-white/20 p-2 rounded-full mr-3">
-                    <HiCalendar className="w-5 h-5" />
+                    <CalendarIcon />
                   </div>
                   <span>
                     {day.title && day.title.includes(`Day ${day.day}`) 
@@ -48,7 +66,12 @@ const ItineraryTab = ({
                   </span>
                 </div>
                 
-                
+                {/* Add date badge if available */}
+                {day.date && (
+                  <span className="text-sm font-normal bg-white/20 px-3 py-1 rounded-full">
+                    {day.date}
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-6 bg-gradient-to-b from-blue-50/50 to-white">
