@@ -30,12 +30,14 @@ const ItineraryTab = ({
         <Card key={day.day} className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-500">
             <CardTitle className="text-white flex items-center justify-between">
-              <span>Day {day.day}: {day.title || `Day ${day.day} Activities`}</span>
-              {day.date && (
-                <span className="text-sm font-normal bg-white/20 px-3 py-1 rounded-full">
-                  {day.date}
-                </span>
-              )}
+              <span>
+                {day.title && day.title.includes(`Day ${day.day}`) 
+                  ? day.title 
+                  : `Day ${day.day}${day.title ? `: ${day.title}` : ' Activities'}`
+                }
+              </span>
+              
+              
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
