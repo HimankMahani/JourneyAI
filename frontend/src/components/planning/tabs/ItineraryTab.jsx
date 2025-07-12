@@ -2,18 +2,23 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ActivityCard from '../ActivityCard';
+import { HiCalendar, HiOutlineCalendar } from 'react-icons/hi';
 
 const ItineraryTab = ({ 
   itinerary,
   onChangeRequest
 }) => {
-  // No need to initialize unused variables
   // Handle null or empty itinerary
   if (!itinerary || !Array.isArray(itinerary) || itinerary.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">No itinerary available</h3>
-        <p className="mt-2 text-gray-500">We're working on creating your perfect trip itinerary.</p>
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <div className="w-16 h-16 mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+          <HiOutlineCalendar className="w-8 h-8 text-blue-600" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900">No itinerary available</h3>
+        <p className="mt-2 text-gray-500 text-center max-w-md">
+          We're working on creating your perfect trip itinerary. Check back soon!
+        </p>
       </div>
     );
   }
@@ -25,38 +30,55 @@ const ItineraryTab = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {itinerary.map((day) => (
-        <Card key={day.day} className="overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-500">
-            <CardTitle className="text-white flex items-center justify-between">
-              <span>
-                {day.title && day.title.includes(`Day ${day.day}`) 
-                  ? day.title 
-                  : `Day ${day.day}${day.title ? `: ${day.title}` : ' Activities'}`
-                }
-              </span>
-              
-              
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
-            {day.activities && Array.isArray(day.activities) && day.activities.map((activity, index) => (
-              <ActivityCard
-                key={`${day.day}-${index}`}
-                activity={activity}
-                index={index}
-                day={day.day}
-                onChangeRequest={onChangeRequest ? handleActivityChange : undefined}
-              />
-            ))}
-            {(!day.activities || day.activities.length === 0) && (
-              <div className="text-center py-4 text-gray-500">
-                No activities planned for this day.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div key={day.day} className="transform transition-all duration-300 hover:translate-y-[-4px]">
+          <Card className="overflow-hidden border-none shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6">
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-white/20 p-2 rounded-full mr-3">
+                    <HiCalendar className="w-5 h-5" />
+                  </div>
+                  <span>
+                    {day.title && day.title.includes(`Day ${day.day}`) 
+                      ? day.title 
+                      : `Day ${day.day}${day.title ? `: ${day.title}` : ' Activities'}`
+                    }
+                  </span>
+                </div>
+                
+                
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8 space-y-6 bg-gradient-to-b from-blue-50/50 to-white">
+              {day.activities && Array.isArray(day.activities) && day.activities.map((activity, index) => (
+                <div 
+                  key={`${day.day}-${index}`}
+                  className={index < day.activities.length - 1 ? "pb-6 border-b border-gray-100" : ""}
+                >
+                  <ActivityCard
+                    activity={activity}
+                    index={index}
+                    day={day.day}
+                    onChangeRequest={onChangeRequest ? handleActivityChange : undefined}
+                  />
+                </div>
+              ))}
+              {(!day.activities || day.activities.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                  <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p>No activities planned for this day.</p>
+                  <button className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Add an activity
+                  </button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       ))}
     </div>
   );
