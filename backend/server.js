@@ -1,5 +1,3 @@
-/* eslint-env node */
-// Load environment variables first, before any other imports
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -14,18 +12,10 @@ import aiRoutes from './routes/ai.js';
 import aiDestinationInfoRoutes from './routes/aiDestinationInfo.js';
 import userRoutes from './routes/users.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
-import { fileURLToPath } from 'url';
-import path from 'path';
 
-// ES Module fix for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Create Express app
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-// Middleware
 app.use(cors({
   origin: [
     'https://journey-ai-beta.vercel.app',
@@ -37,22 +27,17 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Static files only for production
-// app.use(express.static(path.join(__dirname, 'dist')));
 
-// Connect to MongoDB with more robust connection options
+
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 30000, // Increase timeout for slow connections
-  socketTimeoutMS: 45000, // How long to wait for responses from MongoDB
-  autoIndex: true, // Build indexes
-  maxPoolSize: 10, // Maintain up to 10 socket connections
-  family: 4 // Use IPv4, skip trying IPv6
+  socketTimeoutMS: 45000, // How long to wait for responses
+  maxPoolSize: 10, // Max 10 connections
+  family: 4 // Use IPv4
 })
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('Connected to Database'))
   .catch(err => {
     console.error('MongoDB connection error:', err);
-    // Don't crash the server if MongoDB connection fails
-    console.log('Continuing without MongoDB connection...');
   });
 
 // Routes
@@ -65,20 +50,12 @@ app.use('/api/ai', aiDestinationInfoRoutes); // Add destination-info endpoint to
 app.use('/api/users', userRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 
-// Health check route
 app.get('/', (req, res) => {
   res.json({ 
     status: 'ok',
     message: 'JourneyAI Backend API'
   });
 });
-
-// Serve React frontend for all other routes (only for production)
-/*
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-*/
 
 // Error handler middleware
 app.use((err, req, res, next) => {
@@ -89,20 +66,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.log('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit the process - just log the error
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.log('Uncaught Exception:', error);
-  // Don't exit the process - just log the error
-});
-
-// Start server with error handling
-const server = app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
