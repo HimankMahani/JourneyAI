@@ -10,10 +10,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
-// @access  Public
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, location } = req.body;
+    const { email, password, firstName, lastName, location } = req.body;
     
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -27,21 +26,13 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Parse location if provided
-    let locationData = {};
-    if (location) {
-      const locationParts = location.split(',').map(part => part.trim());
-      if (locationParts.length >= 2) {
-        locationData = {
-          city: locationParts[0],
-          country: locationParts[locationParts.length - 1],
-          full: location
-        };
-      } else {
-        locationData = {
-          full: location
-        };
-      }
-    }
+    const locationData = location ? {
+      ...(location.includes(',') && {
+        city: location.split(',')[0].trim(),
+        country: location.split(',').pop().trim()
+      }),
+      full: location
+    } : {}
 
     // Create new user
     user = new User({
@@ -65,7 +56,6 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: user._id,
-        username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -79,26 +69,22 @@ router.post('/register', async (req, res) => {
 
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
-// @access  Public
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Check if user exists
     const user = await User.findOne({ email });
     
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create JWT token
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -123,7 +109,6 @@ router.post('/login', async (req, res) => {
 
 // @route   POST /api/auth/google
 // @desc    Google OAuth authentication
-// @access  Public
 router.post('/google', async (req, res) => {
   try {
     const { idToken } = req.body;
@@ -146,11 +131,8 @@ router.post('/google', async (req, res) => {
         await user.save();
       }
     } else {
-      // Create new user from Google data
-      const username = email.split('@')[0] + Math.floor(Math.random() * 1000);
-      
+      // Create new user from Google data      
       user = new User({
-        username,
         email,
         password: await bcrypt.hash(Math.random().toString(36).slice(-8), 10), // Random password
         firstName: given_name || name.split(' ')[0],
@@ -173,7 +155,6 @@ router.post('/google', async (req, res) => {
       token,
       user: {
         id: user._id,
-        username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -187,7 +168,6 @@ router.post('/google', async (req, res) => {
 
 // @route   GET /api/auth/me
 // @desc    Get current user profile
-// @access  Private
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');

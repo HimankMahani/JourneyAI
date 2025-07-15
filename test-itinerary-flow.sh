@@ -17,7 +17,7 @@ echo_separator "1. Registering user $EMAIL"
 REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "testuser1",
+    # "username": "testuser1", # removed username field
     "email": "'$EMAIL'",
     "password": "'$PASSWORD'",
     "firstName": "Test",

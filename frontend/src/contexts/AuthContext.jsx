@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       // Map frontend field names to backend field names if needed
       const backendUserData = {
-        username: userData.username,
         email: userData.email,
         password: userData.password,
         firstName: userData.firstName,

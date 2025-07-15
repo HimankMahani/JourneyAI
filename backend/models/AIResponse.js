@@ -4,14 +4,12 @@ const aiResponseSchema = new mongoose.Schema({
   tripId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trip',
-    required: true,
-    index: true
+    required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   type: {
     type: String,
@@ -49,14 +47,11 @@ const aiResponseSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'parsing_error'],
+    enum: ['pending', 'completed', 'failed'],
     default: 'pending'
   },
   errorMessage: String,
-  version: {
-    type: Number,
-    default: 1
-  }
+
 }, {
   timestamps: true
 });
