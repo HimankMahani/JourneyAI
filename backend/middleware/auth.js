@@ -3,19 +3,15 @@ import User from '../models/User.js';
 
 export const auth = async (req, res, next) => {
   try {
-    // Get token from header
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({ message: 'No authentication token, access denied' });
     }
 
-    // Verify token
+    // verify
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Find user with matching id and token
     const user = await User.findById(decoded.id);
-    
     if (!user) {
       return res.status(401).json({ message: 'User not found, authentication failed' });
     }
