@@ -49,7 +49,7 @@ const ActivityCard = ({
   };
 
   const activityType = activity?.type || activity?.category || 'activity';
-  const activityTitle = activity?.title || 'Untitled Activity';
+  const activityTitle = activity?.title || activity?.activity || 'Untitled Activity';
   const activityTime = activity?.time || activity?.startTime || 'Time TBD';
   const activityDuration = activity?.duration || 'Duration TBD';
   const activityLocation = activity?.location?.name || activity?.location || 'Location TBD';

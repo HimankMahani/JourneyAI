@@ -15,10 +15,6 @@ const tripSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  userEmail: {
-    type: String,
-    trim: true
-  },
   startDate: {
     type: Date,
     required: true
@@ -40,53 +36,24 @@ const tripSchema = new mongoose.Schema({
     placeId: String
   },
   budget: {
-  currency: {
-    type: String,
-    default: 'INR'
-  },
-    amount: {
-      type: Number
+    currency: {
+      type: String,
+      default: 'INR'
     },
-    expenses: [{
-      category: {
-        type: String,
-        enum: ['accommodation', 'transportation', 'food', 'activities', 'shopping', 'other']
-      },
-      amount: Number,
-      description: String,
-      date: Date
-    }]
+    amount: Number
   },
   itinerary: [{
     day: Number,
-    title: String, // Add title for the day
     date: Date,
     activities: [{
-      time: String, // Activity time (e.g., "10:00 AM")
-      activity: String, // Activity name/title
-      location: String, // Location name
-      description: String, // Activity description
-      cost: Number, // Activity cost
-      category: String, // Activity category (simplified)
-      // Legacy fields for backward compatibility
-      title: String,
-      type: {
-        type: String,
-        enum: ['sightseeing', 'food', 'accommodation', 'transportation', 'activity', 'nightlife', 'other']
-      },
-      duration: String,
-      locationDetails: {
-        name: String,
-        address: String,
-        coordinates: {
-          lat: Number,
-          lng: Number
-        },
-        placeId: String
-      },
+      time: String,
+      activity: String,
+      location: String,
+      description: String,
+      cost: Number,
+      category: String,
       startTime: String,
-      endTime: String,
-      notes: String
+      endTime: String
     }]
   }],
   accommodation: [{
@@ -102,8 +69,7 @@ const tripSchema = new mongoose.Schema({
     checkIn: Date,
     checkOut: Date,
     bookingReference: String,
-    price: Number,
-    notes: String
+    price: Number
   }],
   transportation: [{
     type: {
@@ -115,15 +81,7 @@ const tripSchema = new mongoose.Schema({
     departureTime: Date,
     arrivalTime: Date,
     bookingReference: String,
-    price: Number,
-    notes: String
-  }],
-  notes: [{
-    content: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
+    price: Number
   }],
   isPublic: {
     type: Boolean,
@@ -144,30 +102,15 @@ const tripSchema = new mongoose.Schema({
     type: Number,
     default: 1
   },
-  duration: {
-    type: Number, // in days
-    default: 7
-  },
   status: {
     type: String,
     enum: ['planning', 'confirmed', 'in-progress', 'completed', 'cancelled'],
     default: 'planning'
   },
-  activities: [{
-    type: String
-  }],
-  // New fields for pre-generated itineraries
   generatedBy: {
     type: String,
     enum: ['ai', 'pre-generated', 'manual'],
     default: 'ai'
-  },
-  estimatedCost: {
-    type: Number
-  },
-  from: {
-    type: mongoose.Schema.Types.Mixed, // Can be string or object (city, country, full, etc.)
-    default: null
   }
 }, {
   timestamps: true

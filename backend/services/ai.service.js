@@ -354,7 +354,7 @@ export const estimateEnhancedTripCosts = async (fromLocation, toDestination, day
     const itineraryDetails = itinerary.map((day, index) => {
       const activities = day.activities || [];
       const dayActivities = activities.map(activity => 
-        `- ${activity.title || 'Activity'} at ${activity.location || 'location'} (cost: ${activity.cost || 0})`
+        `- ${activity.activity || activity.title || 'Activity'} at ${activity.location || 'location'} (cost: ${activity.cost || 0})`
       ).join('\n');
       return `Day ${index + 1}: ${day.date || `Day ${index + 1}`}` + (dayActivities ? `\n${dayActivities}` : '');
     }).join('\n\n');

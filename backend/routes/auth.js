@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
         country: location.split(',').pop().trim()
       }),
       full: location
-    } : {}
+    } : {};
 
     // Create new user
     user = new User({
@@ -95,7 +95,6 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,

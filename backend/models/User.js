@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  // ...existing code...
   email: {
     type: String,
     required: true,
@@ -9,9 +8,17 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true, // Allows null values but enforces uniqueness when present
+    trim: true
+  },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      return !this.googleId;
+    },
     minlength: 6
   },
   firstName: {
@@ -42,19 +49,6 @@ const userSchema = new mongoose.Schema({
       type: String,
       trim: true
     }
-  },
-  preferences: {
-    travelStyle: {
-      type: String,
-      enum: ['economy', 'budget', 'mid-range', 'luxury']
-    },
-    interests: [{
-      type: String,
-      enum: ['nature', 'history', 'culture', 'adventure', 'food', 'relaxation', 'shopping', 'nightlife']
-    }],
-    dietaryRestrictions: [{
-      type: String
-    }]
   }
 }, {
   timestamps: true

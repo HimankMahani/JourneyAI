@@ -355,7 +355,7 @@ router.post('/estimate-enhanced-trip-costs', async (req, res) => {
         
         if (day.activities && Array.isArray(day.activities)) {
           day.activities.forEach(activity => {
-            const title = activity.title || 'Activity';
+            const title = activity.activity || activity.title || 'Activity';
             const type = activity.type || '';
             
             itineraryText += `- ${title} (${type})\n`;

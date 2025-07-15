@@ -22,14 +22,14 @@ const aiResponseSchema = new mongoose.Schema({
     required: true
   },
   parsedData: {
-    type: mongoose.Schema.Types.Mixed, // Flexible structure for parsed itinerary data
+    type: mongoose.Schema.Types.Mixed, // Flexible structure
     default: null
   },
   metadata: {
     prompt: String,
     model: String,
     tokens: Number,
-    duration: Number, // in milliseconds
+    duration: Number,
     apiVersion: String,
     userLocation: {
       city: String,
@@ -77,7 +77,7 @@ aiResponseSchema.statics.getAllVersions = function(tripId, type = null) {
     .exec();
 };
 
-// Instance method to cleanup old versions (keep only latest N)
+// Instance method to cleanup old versions
 aiResponseSchema.statics.cleanupOldVersions = async function(tripId, type = 'itinerary', keepCount = 3) {
   const allVersions = await this.find({ tripId, type })
     .sort({ createdAt: -1 })

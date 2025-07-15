@@ -131,7 +131,7 @@ export const parseItineraryJSON = (jsonText, startDate) => {
         date: dayDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
         activities: (day.activities || []).map(activity => {
           // Normalize activity type to match enum values
-          let normalizedType = activity.type || 'activity';
+          let normalizedType = activity.category || activity.type || 'activity';
           const originalType = normalizedType;
           const lowerType = normalizedType.toLowerCase().trim();
           
@@ -231,9 +231,9 @@ export const parseItineraryJSON = (jsonText, startDate) => {
           }
           
           return {
-            title: activity.title || 'Untitled Activity',
+            activity: activity.activity || activity.title || 'Untitled Activity',
             description: activity.description || '',
-            type: normalizedType,
+            category: normalizedType,
             time: activity.time || '09:00',
             duration: activity.duration || '1 hour',
             cost: costValue,
@@ -305,9 +305,9 @@ export const parseItineraryText = (text, startDate) => {
         
         if (timeMatch && line.trim().length > 5) {
           const activity = {
-            title: line.trim(),
+            activity: line.trim(),
             time: timeMatch[1],
-            type: categorizeActivity(line),
+            category: categorizeActivity(line),
             description: '',
             duration: '1 hour',
             cost: '₹0'
@@ -424,8 +424,8 @@ export const validateItinerary = (itinerary) => {
       errors.push(`Day ${dayIndex + 1}: Activities must be an array`);
     } else {
       day.activities.forEach((activity, activityIndex) => {
-        if (!activity.title) {
-          errors.push(`Day ${dayIndex + 1}, Activity ${activityIndex + 1}: Missing title`);
+        if (!activity.activity && !activity.title) {
+          errors.push(`Day ${dayIndex + 1}, Activity ${activityIndex + 1}: Missing activity title`);
         }
         
         if (!activity.type) {
@@ -466,7 +466,7 @@ export const normalizeItinerary = (itinerary, startDate) => {
       date: day.date || dayDate.toISOString().split('T')[0],
       activities: (day.activities || []).map(activity => {
         // Normalize activity type to match enum values in Trip schema
-        let normalizedType = activity.type || 'activity';
+        let normalizedType = activity.category || activity.type || 'activity';
         
         // Convert to lowercase for comparison
         const lowerType = normalizedType.toLowerCase().trim();
@@ -569,9 +569,9 @@ export const normalizeItinerary = (itinerary, startDate) => {
         }
         
         return {
-          title: activity.title || 'Untitled Activity',
+          activity: activity.activity || activity.title || 'Untitled Activity',
           description: activity.description || '',
-          type: normalizedType,
+          category: normalizedType,
           time: activity.time || '09:00',
           duration: activity.duration || '1 hour',
           cost: costValue,

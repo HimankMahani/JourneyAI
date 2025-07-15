@@ -21,23 +21,9 @@ const locationSchema = new mongoose.Schema({
     type: String,
     enum: ['attraction', 'accommodation', 'restaurant', 'transportation', 'other']
   },
-  photos: [String],
   rating: {
     average: Number,
     count: Number
-  },
-  openingHours: {
-    type: Map,
-    of: String
-  },
-  priceLevel: {
-    type: Number,
-    min: 1,
-    max: 5
-  },
-  popularTimes: {
-    type: Map,
-    of: [Number]
   },
   reviews: [{
     user: {
@@ -50,26 +36,13 @@ const locationSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-  tags: [String],
-  source: {
-    type: String,
-    enum: ['google-maps', 'user', 'ai']
-  },
-  userRecommendations: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    recommended: Boolean,
-    notes: String
   }]
 }, {
   timestamps: true
 });
 
 // Create a text index for search functionality
-locationSchema.index({ name: 'text', description: 'text', tags: 'text' });
+locationSchema.index({ name: 'text', description: 'text' });
 
 const Location = mongoose.model('Location', locationSchema);
 
