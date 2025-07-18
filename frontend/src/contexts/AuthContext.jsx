@@ -57,34 +57,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const googleAuth = async (credential) => { // eslint-disable-line no-unused-vars
-    try {
-      setLoading(true);
-      // This would call your backend to verify the Google token and authenticate the user
-      // For now, we'll just simulate a successful login
-      // const data = await authService.googleLogin(credential);
-      
-      // Simulate a successful login
-      const mockData = {
-        user: {
-          id: 'google-user-id',
-          name: 'Google User',
-          email: 'googleuser@example.com',
-        },
-        token: 'mock-token-for-google-auth'
-      };
-      
-      localStorage.setItem('token', mockData.token);
-      localStorage.setItem('user', JSON.stringify(mockData.user));
-      setUser(mockData.user);
-      
-      return { success: true, data: mockData };
-    } catch (error) {
-      return { success: false, error: error.message || 'Google authentication failed' };
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const forgotPassword = async (email) => {
     try {
@@ -109,7 +82,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    googleAuth,
+
     forgotPassword,
     logout,
     isAuthenticated: !!user

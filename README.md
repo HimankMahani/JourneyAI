@@ -10,7 +10,7 @@ A full-stack travel planning application that leverages AI to provide personaliz
 - **Weather Integration**: Real-time weather data and 5-day forecasts for destinations.
 - **Cultural Insights**: Local tips, dining etiquette, and cultural information for major destinations.
 - **Budget Management**: Estimate trip costs and categorize expenses.
-- **User Authentication**: Secure login with JWT and Google OAuth.
+- **User Authentication**: Secure login with JWT.
 - **Responsive Design**: Modern UI optimized for desktop and mobile devices.
 - **Offline Mode**: Cache itineraries and weather data for offline access (planned feature).
 
@@ -111,7 +111,6 @@ npm run dev:frontend
 - Node.js & Express.js
 - MongoDB with Mongoose
 - JWT Authentication
-- Google OAuth 2.0
 - External APIs: Google Maps, OpenWeather, Gemini AI
 
 ### Frontend

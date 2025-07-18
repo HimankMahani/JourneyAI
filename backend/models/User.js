@@ -16,9 +16,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() {
-      return !this.googleId;
-    },
+    required: true,
     minlength: 6
   },
   firstName: {
@@ -32,10 +30,7 @@ const userSchema = new mongoose.Schema({
   profilePicture: {
     type: String
   },
-  googleId: {
-    type: String,
-    sparse: true
-  },
+
   location: {
     city: {
       type: String,
