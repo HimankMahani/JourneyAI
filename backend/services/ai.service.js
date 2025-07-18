@@ -2,14 +2,25 @@
  * Service for handling AI requests using Google's Gemini API
  */
 
-import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
 // Ensure environment variables are loaded
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// Initialize the Google Generative AI client
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+  model: 'gemini-2.0-flash',
+  generationConfig: {
+    temperature: 0.7,
+    topP: 0.8,
+    topK: 40,
+    maxOutputTokens: 8192,
+  },
+});
 
 /**
  * Generate content using Gemini AI
@@ -27,44 +38,23 @@ export const generateContent = async (prompt, options = {}) => {
 
     console.log('Calling Gemini API with prompt:', prompt.substring(0, 100) + '...');
     
-    const response = await axios.post(
-      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 8192,  // Increased from 4096 to 8192
-          topP: options.topP || 0.8,
-          topK: options.topK || 40
-        }
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // Override default generation config with any provided options
+    const generationConfig = {
+      temperature: options.temperature || 0.7,
+      topP: options.topP || 0.8,
+      topK: options.topK || 40,
+      maxOutputTokens: options.maxTokens || 8192,
+    };
 
-    if (!response.data.candidates || response.data.candidates.length === 0) {
-      console.error('No candidates in Gemini API response:', JSON.stringify(response.data));
-      throw new Error('No response from Gemini API');
-    }
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig,
+    });
     
-    return response.data.candidates[0].content.parts[0].text;
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error('Error generating content with Gemini:', error);
-    if (error.response) {
-      console.error('Response data:', JSON.stringify(error.response.data));
-      console.error('Response status:', error.response.status);
-    }
     throw error;
   }
 };

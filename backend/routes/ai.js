@@ -1,26 +1,16 @@
 import express from 'express';
-import axios from 'axios';
 import { auth } from '../middleware/auth.js';
 import Trip from '../models/Trip.js';
+import { generateContent } from '../services/ai.service.js';
 
 const router = express.Router();
 
-// Helper functions
+// Helper function to call Gemini API through the service layer
 const callGeminiAPI = async (prompt, maxOutputTokens = 1024, temperature = 0.7) => {
-  const response = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature, maxOutputTokens }
-    },
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!response.data.candidates?.length) {
-    throw new Error('Failed to generate AI response');
-  }
-  
-  return response.data.candidates[0].content.parts[0].text;
+  return await generateContent(prompt, {
+    maxTokens: maxOutputTokens,
+    temperature
+  });
 };
 
 const parseJsonFromText = (text, fallback) => {
