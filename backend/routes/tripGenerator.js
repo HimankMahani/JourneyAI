@@ -19,8 +19,7 @@ import {
 import { 
   searchPlacePhotos, 
   getCachedPlacePhoto,
-  getDestinationImage,
-  clearPhotoCache 
+  getDestinationImage
 } from '../services/places.service.js';
 
 // Ensure environment variables are loaded
@@ -491,21 +490,7 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/generator/debug
- * @desc    Debug endpoint to verify API key and configuration
- * @access  Private
- */
-router.get('/debug', auth, (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  res.json({
-    hasGeminiKey: !!apiKey,
-    keyLength: apiKey ? apiKey.length : 0,
-    keyPreview: apiKey ? `${apiKey.substring(0, 3)}...${apiKey.substring(apiKey.length - 3)}` : null,
-    envVars: Object.keys(process.env).filter(key => !key.includes('SECRET') && !key.includes('KEY') && !key.includes('PASSWORD')),
-    message: apiKey ? 'Gemini API key is configured' : 'Gemini API key is missing'
-  });
-});
+
 
 /**
  * @route   POST /api/generator/reparse-itinerary/:id
@@ -696,119 +681,13 @@ router.get('/ai-response/:tripId/:type', auth, async (req, res) => {
   }
 });
 
-// Health check endpoint (no auth required)
-router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Trip Generator API is running',
-    timestamp: new Date().toISOString()
-  });
-});
 
-// Test endpoint to get trips for a specific user by email (temporary for testing)
-router.get('/test-user-trips/:email', async (req, res) => {
-  try {
-    const { email } = req.params;
-    console.log('Fetching trips for user:', email);
-    
-    const trips = await Trip.find({ userEmail: email })
-      .sort({ createdAt: -1 })
-      .select('-__v');
-    
-    console.log('Found trips:', trips.length);
-    res.json({
-      success: true,
-      userEmail: email,
-      tripsCount: trips.length,
-      trips
-    });
-  } catch (error) {
-    console.error('Error fetching user trips:', error);
-    res.status(500).json({ 
-      success: false,
-      message: error.message 
-    });
-  }
-});
 
-// Test endpoint to get all trips (temporary for testing)
-router.get('/test-all-trips', async (req, res) => {
-  try {
-    console.log('Fetching all trips from database');
-    
-    const trips = await Trip.find({})
-      .sort({ createdAt: -1 })
-      .lean(); // Use lean() to get plain objects
-    
-    console.log('Found total trips:', trips.length);
-    
-    // Basic trip summary without detailed processing
-    const tripSummary = trips.map(trip => ({
-      _id: trip._id,
-      destination: trip.destination?.name || trip.destination,
-      userEmail: trip.userEmail,
-      startDate: trip.startDate,
-      endDate: trip.endDate,
-      budget: typeof trip.budget === 'object' ? trip.budget.amount : trip.budget,
-      hasItinerary: !!(trip.itinerary && trip.itinerary.length > 0),
-      createdAt: trip.createdAt
-    }));
-    
-    res.json({
-      success: true,
-      totalTrips: trips.length,
-      tripSummary
-    });
-  } catch (error) {
-    console.error('Error fetching all trips:', error);
-    res.status(500).json({ 
-      success: false,
-      message: error.message,
-      stack: error.stack
-    });
-  }
-});
 
-// Test endpoint to update trips with userEmail (temporary for testing)
-router.post('/update-test-trips', async (req, res) => {
-  try {
-    console.log('Updating trips with test userEmail...');
-    
-    // Find trips with valid itineraries but no userEmail
-    const tripsToUpdate = await Trip.find({ 
-      'itinerary.0': { $exists: true },
-      userEmail: { $exists: false }
-    }).limit(3);
 
-    console.log(`Found ${tripsToUpdate.length} trips to update`);
-    
-    const updatedTrips = [];
-    for (const trip of tripsToUpdate) {
-      const updated = await Trip.findByIdAndUpdate(
-        trip._id, 
-        { userEmail: 'websitetest@example.com' },
-        { new: true }
-      );
-      updatedTrips.push({
-        id: updated._id,
-        destination: updated.destination?.name || updated.destination,
-        userEmail: updated.userEmail
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: `Updated ${updatedTrips.length} trips`,
-      updatedTrips
-    });
-  } catch (error) {
-    console.error('Error updating trips:', error);
-    res.status(500).json({ 
-      success: false,
-      message: error.message 
-    });
-  }
-});
+
+
+
 
 // Test endpoint to get trips for frontend testing (temporary)
 router.get('/test-frontend-trips/:email', async (req, res) => {
@@ -847,112 +726,7 @@ router.get('/test-frontend-trips/:email', async (req, res) => {
   }
 });
 
-// Test endpoint for Hong Kong trip generation (no auth required)
-router.post('/test-hong-kong-trip', async (req, res) => {
-  try {
-    const { 
-      destination = 'Hong Kong', 
-      startDate = '2025-07-16', 
-      endDate = '2025-07-20', 
-      interests = ['Culture', 'Food', 'Nightlife'], 
-      budget = 'luxury',
-      title = 'Test Trip to Hong Kong',
-      travelers = '5+'
-    } = req.body;
 
-    console.log('Test endpoint: Generating Hong Kong trip with interests:', interests);
-    console.log('Using budget:', budget);
-    
-    // Generate itinerary
-    let generatedItinerary;
-    let generatedLocalTips;
-    
-    try {
-      generatedItinerary = await generateTravelItinerary({
-        destination, startDate, endDate, interests, budget
-      });
-      
-      console.log('Itinerary generated successfully');
-      
-      // Generate local tips
-      generatedLocalTips = await generateLocalTips(destination);
-      console.log('Local tips generated successfully');
-      
-    } catch (aiError) {
-      console.error('AI Service Error:', aiError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate content using AI service',
-        error: aiError.message
-      });
-    }
-
-    // Parse the generated itinerary
-    try {
-      // Parse the AI-generated itinerary
-      const parsedItinerary = parseStoredAIResponse(generatedItinerary, {
-        destination, startDate, endDate, interests
-      });
-      
-      console.log('Parsed itinerary successfully, days:', parsedItinerary?.length || 0);
-      
-      // Validate and normalize the itinerary
-      const { isValid, errors } = validateItinerary(parsedItinerary);
-      if (!isValid) {
-        console.log('Itinerary validation failed:', errors);
-        return res.status(400).json({
-          success: false,
-          message: 'Generated itinerary failed validation',
-          errors
-        });
-      }
-      
-      const normalizedItinerary = normalizeItinerary(parsedItinerary, startDate);
-      
-      // Return successful response
-      res.json({
-        success: true,
-        message: 'Trip itinerary generated successfully',
-        tripData: {
-          title,
-          destination: { name: destination },
-          startDate,
-          endDate,
-          budget: {
-            currency: 'INR',
-            amount: getBudgetAmount(budget, destination, startDate, endDate, travelers)
-          },
-          itinerary: normalizedItinerary,
-          aiSuggestions: [
-            {
-              content: generatedItinerary,
-              type: 'itinerary'
-            },
-            {
-              content: generatedLocalTips,
-              type: 'safety'
-            }
-          ]
-        }
-      });
-      
-    } catch (parseError) {
-      console.error('Itinerary parsing error:', parseError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to parse generated itinerary',
-        error: parseError.message
-      });
-    }
-  } catch (error) {
-    console.error('Test trip generation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error generating test trip',
-      error: error.message
-    });
-  }
-});
 
 /**
  * @route   GET /api/generator/place-photo/:placeName
@@ -1033,80 +807,8 @@ router.post('/place-photos', auth, async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/generator/clear-photo-cache
- * @desc    Clear the photo cache (for testing/debugging)
- * @access  Private
- */
-router.post('/clear-photo-cache', auth, (req, res) => {
-  try {
-    clearPhotoCache();
-    res.json({
-      success: true,
-      message: 'Photo cache cleared successfully'
-    });
-  } catch (error) {
-    console.error('Error clearing photo cache:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to clear photo cache',
-      error: error.message
-    });
-  }
-});
 
-/**
- * @route   POST /api/generator/test-destination-images
- * @desc    Test destination image fetching for multiple places
- * @access  Private
- */
-router.post('/test-destination-images', auth, async (req, res) => {
-  try {
-    const { places } = req.body;
-    
-    if (!places || !Array.isArray(places)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Places array is required'
-      });
-    }
 
-    console.log(`Testing destination images for: ${places.join(', ')}`);
-    
-    const results = [];
-    
-    for (const place of places) {
-      try {
-        const imageUrl = await getCachedPlacePhoto(place);
-        results.push({
-          place: place,
-          imageUrl: imageUrl,
-          source: 'Fetched successfully'
-        });
-      } catch (error) {
-        results.push({
-          place: place,
-          imageUrl: null,
-          source: 'Error',
-          error: error.message
-        });
-      }
-    }
-    
-    res.json({
-      success: true,
-      message: 'Destination image test completed',
-      results: results
-    });
 
-  } catch (error) {
-    console.error('Error testing destination images:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to test destination images',
-      error: error.message
-    });
-  }
-});
 
 export default router;

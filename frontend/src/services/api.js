@@ -57,24 +57,6 @@ export const authService = {
     }
   },
 
-  forgotPassword: async (email) => {
-    try {
-      const response = await api.post('/auth/forgot-password', { email });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  },
-
-  resetPassword: async (token, password) => {
-    try {
-      const response = await api.post(`/auth/reset-password/${token}`, { password });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  },
-
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
