@@ -237,23 +237,5 @@ export const weatherService = {
   }
 };
 
-export const aiService = {
-  // Enhanced cost estimation with itinerary details
-  estimateEnhancedTripCosts: async (fromLocation, toDestination, days = 1, travelers = 1, itinerary = null) => {
-    try {
-      const response = await api.post('/ai/estimate-enhanced-trip-costs', { 
-        fromLocation, 
-        toDestination, 
-        days, 
-        travelers,
-        itinerary
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  }
-};
-
 // Export default api instance for any other requests
 export default api;
