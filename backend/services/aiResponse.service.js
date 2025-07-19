@@ -97,41 +97,6 @@ export const listAIResponses = async (tripId, type = null) => {
 };
 
 /**
- * Delete AI response document
- * @param {string} tripId - The trip ID
- * @param {string} type - Type of response
- * @param {string} responseId - Specific response ID (optional, will delete latest if not provided)
- * @returns {Promise<boolean>} - Success status
- */
-export const deleteAIResponse = async (tripId, type = 'itinerary', responseId = null) => {
-  try {
-    console.log(`Deleting AI response for trip ${tripId}, type ${type}`);
-    
-    let result;
-    
-    if (responseId) {
-      result = await AIResponse.findByIdAndDelete(responseId);
-    } else {
-      const latestResponse = await AIResponse.getLatest(tripId, type);
-      if (latestResponse) {
-        result = await AIResponse.findByIdAndDelete(latestResponse._id);
-      }
-    }
-    
-    if (result) {
-      console.log(`Deleted AI response with ID: ${result._id}`);
-      return true;
-    } else {
-      console.log(`No AI response found to delete for trip ${tripId}, type ${type}`);
-      return false;
-    }
-  } catch (error) {
-    console.error('Error deleting AI response:', error);
-    return false;
-  }
-};
-
-/**
  * Clean up old AI response documents (keep only the latest N documents per trip/type)
  * @param {string} tripId - The trip ID
  * @param {string} type - Type of response
@@ -225,66 +190,4 @@ export const getStorageStats = async () => {
   }
 };
 
-/**
- * Store parsed itinerary data along with raw response
- * @param {string} responseId - The AI response ID
- * @param {Array} parsedData - The parsed itinerary data
- * @returns {Promise<boolean>} - Success status
- */
-export const storeParsedData = async (responseId, parsedData) => {
-  try {
-    console.log(`Storing parsed data for AI response ${responseId}`);
-    
-    const result = await AIResponse.findByIdAndUpdate(
-      responseId,
-      { 
-        parsedData,
-        status: 'completed'
-      },
-      { new: true }
-    );
-    
-    if (result) {
-      console.log(`Stored parsed data for AI response ${responseId}`);
-      return true;
-    } else {
-      console.log(`AI response ${responseId} not found`);
-      return false;
-    }
-  } catch (error) {
-    console.error('Error storing parsed data:', error);
-    return false;
-  }
-};
 
-/**
- * Mark AI response as failed with error message
- * @param {string} responseId - The AI response ID
- * @param {string} errorMessage - The error message
- * @returns {Promise<boolean>} - Success status
- */
-export const markAIResponseFailed = async (responseId, errorMessage) => {
-  try {
-    console.log(`Marking AI response ${responseId} as failed`);
-    
-    const result = await AIResponse.findByIdAndUpdate(
-      responseId,
-      { 
-        status: 'failed',
-        errorMessage
-      },
-      { new: true }
-    );
-    
-    if (result) {
-      console.log(`Marked AI response ${responseId} as failed`);
-      return true;
-    } else {
-      console.log(`AI response ${responseId} not found`);
-      return false;
-    }
-  } catch (error) {
-    console.error('Error marking AI response as failed:', error);
-    return false;
-  }
-};
