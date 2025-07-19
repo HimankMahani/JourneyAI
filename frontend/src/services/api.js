@@ -298,15 +298,6 @@ export const aiService = {
     }
   },
   
-  getTripSuggestions: async (tripId) => {
-    try {
-      const response = await api.post('/ai/trip-suggestions', { tripId });
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  },
-  
   getLocalRecommendations: async (destination) => {
     try {
       const response = await api.post('/ai/local-recommendations', { destination });

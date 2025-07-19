@@ -41,9 +41,8 @@ The backend is organized into several key modules:
 - Get weather forecast: `GET /api/weather/forecast`
 
 ### AI Recommendations (/api/ai)
-- Get trip suggestions: `POST /api/ai/trip-suggestions`
-- Get activity recommendations: `POST /api/ai/activity-recommendations`
-- Get local tips: `POST /api/ai/local-tips`
+- Get enhanced trip cost estimates: `POST /api/ai/estimate-enhanced-trip-costs`
+- Get destination information: `POST /api/ai/destination-info`
 
 ### User Profile (/api/users)
 - Get user profile: `GET /api/users/profile`
