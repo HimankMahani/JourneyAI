@@ -21,12 +21,6 @@ const parseJsonFromText = (text, fallback) => {
   }
 };
 
-const formatDestinationName = (destination) => {
-  if (typeof destination === 'string') return destination;
-  if (typeof destination === 'object' && destination.name) return destination.name;
-  return String(destination);
-};
-
 // @route   POST /api/ai/estimate-enhanced-trip-costs
 // @desc    Get AI-generated cost estimates with itinerary details
 // @access  Public
@@ -108,49 +102,6 @@ router.post('/estimate-enhanced-trip-costs', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Error in cost estimation endpoint:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// @route   POST /api/ai/destination-info
-// @desc    Get AI-generated destination information
-// @access  Public
-router.post('/destination-info', async (req, res) => {
-  try {
-    const { destination } = req.body;
-    
-    if (!destination) {
-      return res.status(400).json({ message: 'Please provide a destination' });
-    }
-    
-    const destinationName = formatDestinationName(destination);
-    
-    const prompt = `
-    Please provide the following information about ${destinationName} as a travel destination:
-    1. A brief description of the cultural aspects and interesting facts (2-3 sentences)
-    2. Three practical local tips for travelers visiting this destination
-    3. A list of three must-visit attractions or experiences
-    
-    Format the response as JSON with these fields:
-    {
-      "culturalInfo": "Cultural information here...",
-      "localTips": "Local tips here...",
-      "mustVisit": ["Attraction 1", "Attraction 2", "Attraction 3"]
-    }
-    `;
-    
-    const aiText = await callGeminiAPI(prompt);
-    
-    const defaultResponse = {
-      culturalInfo: `${destinationName} is a fascinating travel destination with rich history and culture.`,
-      localTips: `When visiting ${destinationName}, be sure to try the local cuisine, respect local customs, and check weather conditions before your trip.`,
-      mustVisit: [`${destinationName} Old Town`, `${destinationName} Museum`, `${destinationName} Gardens`]
-    };
-    
-    const result = parseJsonFromText(aiText, defaultResponse);
-    res.json(result);
-  } catch (error) {
-    console.error('Error in destination-info endpoint:', error);
     res.status(500).json({ message: error.message });
   }
 });
