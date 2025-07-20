@@ -77,19 +77,9 @@ export const authService = {
 export const tripService = {
   getAllTrips: async () => {
     try {
-      // Check if we're in test mode (for development)
-      const isTestMode = window.location.search.includes('test=true') || 
-                        localStorage.getItem('testMode') === 'true';
-      
-      if (isTestMode) {
-        // Use test endpoint with hardcoded test user
-        const response = await api.get('/generator/test-frontend-trips/websitetest@example.com');
-        return response.data;
-      } else {
-        // Use regular authenticated endpoint
-        const response = await api.get('/trips');
-        return response.data;
-      }
+      // Use regular authenticated endpoint
+      const response = await api.get('/trips');
+      return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error('Network Error');
     }

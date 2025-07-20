@@ -11,7 +11,6 @@ import Booking from './components/Booking'
 import SignIn from './components/SignIn'
 import SignUp from './components/SignUp'
 import ForgotPassword from './components/ForgotPassword'
-import Debug from './components/Debug'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { TripProvider } from './contexts/TripContext'
@@ -83,13 +82,6 @@ const App = () => {
           }/>
           <Route path="/forgot-password" element={
             <ForgotPassword />
-          }/>
-          <Route path="/debug" element={
-            <ProtectedRoute>
-              <Layout>
-                <Debug />
-              </Layout>
-            </ProtectedRoute>
           }/>
           {/* Catch-all route - redirect to home */}
           <Route path="*" element={<Navigate to="/" />} />

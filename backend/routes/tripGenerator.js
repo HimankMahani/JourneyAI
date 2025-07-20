@@ -689,45 +689,6 @@ router.get('/ai-response/:tripId/:type', auth, async (req, res) => {
 
 
 
-// Test endpoint to get trips for frontend testing (temporary)
-router.get('/test-frontend-trips/:email', async (req, res) => {
-  try {
-    const { email } = req.params;
-    console.log('Fetching trips for frontend test:', email);
-    
-    const trips = await Trip.find({ userEmail: email })
-      .sort({ createdAt: -1 })
-      .select('-__v');
-    
-    console.log('Found trips for frontend:', trips.length);
-    
-    // Format trips for frontend consumption
-    const formattedTrips = trips.map(trip => ({
-      _id: trip._id,
-      title: trip.title,
-      description: trip.description,
-      destination: trip.destination,
-      startDate: trip.startDate,
-      endDate: trip.endDate,
-      budget: trip.budget,
-      itinerary: trip.itinerary,
-      userEmail: trip.userEmail,
-      createdAt: trip.createdAt,
-      updatedAt: trip.updatedAt
-    }));
-    
-    res.json(formattedTrips);
-  } catch (error) {
-    console.error('Error fetching trips for frontend:', error);
-    res.status(500).json({ 
-      success: false,
-      message: error.message 
-    });
-  }
-});
-
-
-
 /**
  * @route   GET /api/generator/place-photo/:placeName
  * @desc    Get place photo using Google Places API

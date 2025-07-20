@@ -5,16 +5,6 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
   { ignores: ['dist'] },
-  // Special configuration for API test server
-  {
-    files: ['**/api-test-server.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
-  },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
