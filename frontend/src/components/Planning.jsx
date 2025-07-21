@@ -517,6 +517,7 @@ const Planning = () => {
               destinationInfo={destinationInfo}
               weather={weather}
               trip={trip}
+              tripData={trip}
             />
           )}
         </div>

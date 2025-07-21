@@ -34,7 +34,9 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
   const [weatherError, setWeatherError] = useState(null);
 
   // Extract destination name from trip data
-  const destinationName = destination || tripData?.destination || 'Unknown';
+  const destinationName = destination || 
+    (typeof tripData?.destination === 'string' ? tripData.destination : tripData?.destination?.name) || 
+    'Unknown';
   
   const fetchWeatherData = useCallback(async () => {
     setIsLoadingWeather(true);
@@ -142,12 +144,82 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
     return recommendations;
   };
 
-  // Mock cultural and tips data - in a real app, this would come from a database or API
-  const getCulturalInfo = (destination) => {
+  // Get cultural info and AI-generated tips from trip data
+  const getCulturalInfo = (destination, tripData) => {
+    // Extract AI-generated tips from trip data
+    const aiTips = tripData?.aiSuggestions?.find(suggestion => 
+      suggestion.type === 'safety' || suggestion.type === 'tips'
+    );
+    
+    let parsedTips = [];
+    if (aiTips?.content) {
+      try {
+        // Try to parse the AI tips content
+        if (typeof aiTips.content === 'string') {
+          // Handle markdown-formatted content from AI
+          const content = aiTips.content;
+          
+          // Split by lines and filter out headers, empty lines, and formatting
+          const lines = content.split('\n').filter(line => {
+            const trimmed = line.trim();
+            return trimmed.length > 0 && 
+                   !trimmed.startsWith('**') && // Skip bold headers
+                   !trimmed.startsWith('#') && // Skip markdown headers
+                   !trimmed.match(/^\*\*\d+\./) && // Skip numbered section headers
+                   !trimmed.toLowerCase().includes('here are') && // Skip intro lines
+                   !trimmed.toLowerCase().includes('enjoy your trip') && // Skip outro lines
+                   trimmed.length > 20; // Only substantial content
+          });
+          
+          parsedTips = lines
+            .map(line => {
+              // Clean up markdown formatting and list prefixes
+              return line
+                .replace(/^\*\s+/, '') // Remove markdown bullets
+                .replace(/^\*\*(.+?)\*\*:?\s*/, '') // Remove bold text (like **Metro is Your Friend:**)
+                .replace(/^\d+\.\s*/, '') // Remove numbered lists
+                .replace(/^[-*•]\s*/, '') // Remove bullet points
+                .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold formatting but keep text
+                .trim();
+            })
+            .filter(tip => {
+              // Final filtering for quality tips
+              return tip.length > 15 && 
+                     !tip.toLowerCase().includes('covering the areas') &&
+                     !tip.toLowerCase().startsWith('okay,') &&
+                     !tip.includes(':') || tip.split(':').length === 2; // Allow tips with one colon
+            })
+            .slice(0, 8); // Limit to 8 best tips for better UI
+          
+          // If no good tips found, try to split by common delimiters
+          if (parsedTips.length === 0) {
+            const delimiters = ['. ', '; ', '\n\n'];
+            for (const delimiter of delimiters) {
+              const splitTips = aiTips.content.split(delimiter).filter(tip => tip.trim().length > 10);
+              if (splitTips.length > 1) {
+                parsedTips = splitTips.map(tip => tip.trim());
+                break;
+              }
+            }
+          }
+        } else if (Array.isArray(aiTips.content)) {
+          parsedTips = aiTips.content.filter(tip => tip && tip.length > 10);
+        }
+      } catch (error) {
+        console.error('Error parsing AI tips:', error);
+      }
+    }
+    
+    // If still no tips found but we have content, use the whole content as a single tip
+    if (parsedTips.length === 0 && aiTips?.content && typeof aiTips.content === 'string' && aiTips.content.length > 20) {
+      parsedTips = [aiTips.content.trim()];
+    }
+    
+    // Fallback mock data for culture info
     const mockCulturalData = {
       'Paris': {
         culture: 'French culture values politeness and formal greetings. Always say "Bonjour" when entering shops and "Au revoir" when leaving.',
-        tips: [
+        fallbackTips: [
           'Restaurants typically open for dinner at 7:30 PM',
           'Tipping 10% is appreciated but not mandatory',
           'Many shops close on Sundays',
@@ -156,7 +228,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'Tokyo': {
         culture: 'Japanese culture emphasizes respect and politeness. Bowing is common and removing shoes indoors is expected.',
-        tips: [
+        fallbackTips: [
           'Cash is still widely used - carry yen',
           'Avoid eating while walking',
           'Be quiet on public transportation',
@@ -165,7 +237,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'New York': {
         culture: 'Fast-paced city culture with diverse neighborhoods. Direct communication is normal and expected.',
-        tips: [
+        fallbackTips: [
           'Subway runs 24/7 but can be crowded during rush hour',
           'Tipping 18-20% is standard at restaurants',
           'Walk quickly and stay aware of your surroundings',
@@ -174,7 +246,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'London': {
         culture: 'British culture values queuing and politeness. "Please" and "thank you" are used frequently.',
-        tips: [
+        fallbackTips: [
           'Stand on the right side of escalators',
           'Pubs close early compared to other cities',
           'Carry an umbrella - weather can change quickly',
@@ -183,7 +255,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'Barcelona': {
         culture: 'Spanish culture includes late dining and afternoon siestas. Family and social connections are important.',
-        tips: [
+        fallbackTips: [
           'Lunch is typically 2-4 PM, dinner after 9 PM',
           'Many shops close during siesta (2-5 PM)',
           'Learn basic Spanish phrases - locals appreciate the effort',
@@ -192,7 +264,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'Rome': {
         culture: 'Italian culture emphasizes family, food, and taking time to enjoy life. Gestures are an important part of communication.',
-        tips: [
+        fallbackTips: [
           'Dress modestly when visiting churches',
           'Tipping 10-15% is appreciated but not mandatory',
           'Restaurants often close between lunch and dinner',
@@ -201,7 +273,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'Amsterdam': {
         culture: 'Dutch culture values directness and informality. Cycling is a major part of daily life.',
-        tips: [
+        fallbackTips: [
           'Rent a bike to get around like a local',
           'Be careful of bike lanes when walking',
           'Many locals speak excellent English',
@@ -210,7 +282,7 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       },
       'Dubai': {
         culture: 'UAE culture blends traditional Islamic values with modern cosmopolitan lifestyle. Respect for local customs is important.',
-        tips: [
+        fallbackTips: [
           'Dress conservatively, especially in public areas',
           'Avoid public displays of affection',
           'Friday is the holy day - some businesses may be closed',
@@ -219,9 +291,9 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
       }
     };
     
-    return mockCulturalData[destination] || {
+    const mockData = mockCulturalData[destination] || {
       culture: 'Every destination has its unique culture and customs. Research local etiquette and traditions before your trip to show respect for the local community.',
-      tips: [
+      fallbackTips: [
         'Learn basic phrases in the local language',
         'Research local customs and dress codes',
         'Be respectful of religious and cultural sites',
@@ -229,9 +301,15 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
         'Observe and follow local social norms'
       ]
     };
+    
+    return {
+      culture: mockData.culture,
+      tips: parsedTips.length > 0 ? parsedTips : mockData.fallbackTips,
+      isAIGenerated: parsedTips.length > 0
+    };
   };
 
-  const culturalInfo = getCulturalInfo(destinationName);
+  const culturalInfo = getCulturalInfo(destinationName, tripData);
 
   return (
     <div className="space-y-8">
@@ -450,9 +528,16 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
 
             {/* Local Tips */}
             <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6">
-              <h4 className="font-semibold mb-4 flex items-center gap-2 text-purple-800">
-                <Info className="w-5 h-5" />
-                Local Tips
+              <h4 className="font-semibold mb-4 flex items-center justify-between text-purple-800">
+                <div className="flex items-center gap-2">
+                  <Info className="w-5 h-5" />
+                  Local Tips
+                </div>
+                {culturalInfo.isAIGenerated && (
+                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200 text-xs">
+                    AI Generated
+                  </Badge>
+                )}
               </h4>
               <div className="space-y-3">
                 {culturalInfo.tips.map((tip, index) => (
