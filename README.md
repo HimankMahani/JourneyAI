@@ -1,40 +1,31 @@
 
-# JourneyAI - Smart Travel Planner
-
-A full-stack travel planning application that leverages AI to provide personalized travel recommendations, detailed itineraries, real-time weather forecasts, and cultural insights. The app is designed to simplify trip planning and enhance the travel experience.
-
----
-
-## 🌟 Features
-
-- **AI-Powered Itineraries**: Generate personalized travel plans based on user preferences.
-- **Weather Integration**: Real-time weather data and 5-day forecasts for destinations.
-- **Cultural Insights**: Local tips, dining etiquette, and cultural information for major destinations.
-- **Budget Management**: Estimate trip costs and categorize expenses.
-- **User Authentication**: Secure login with JWT.
-- **Responsive Design**: Modern UI optimized for desktop and mobile devices.
-- **Offline Mode**: Cache itineraries and weather data for offline access (planned feature).
-
----
-
 ai-smart-travel-planner/
 
-## 🗂️ Project Structure
+# JourneyAI: AI-Powered Smart Travel Planner
 
-```
-JourneyAI/
+JourneyAI is a full-stack, AI-driven travel planning platform that delivers personalized itineraries, real-time weather, cultural insights, and budget management. The project is designed for extensibility, developer-friendliness, and seamless user experience.
+
+---
+
+## 📚 Documentation Index
+
+- [System Architecture & Diagrams](SYSTEM_DOCUMENTATION.md)
+- [Backend API & Services](backend/BACKEND.md) | [Backend Full Docs](BACKEND_DOCUMENTATION.md)
+- [Frontend Architecture & UI](FRONTEND_DOCUMENTATION.md)
+- [Weather Integration](WEATHER_INTEGRATION_SUMMARY.md)
+- [Test Scripts & Examples](test-trip-ai.js, backend/test-db.js)
 
 ---
 
 ## 🌟 Key Features
 
-- **AI-Powered Itineraries**: Generate personalized travel plans based on user preferences.
-- **Weather Integration**: Real-time weather data and 5-day forecasts for destinations (OpenWeather API).
-- **Cultural Insights**: Local tips, dining etiquette, and cultural information for major destinations.
-- **Budget Management**: Estimate trip costs and categorize expenses.
-- **User Authentication**: Secure login with JWT.
-- **Responsive Design**: Modern UI optimized for desktop and mobile devices.
-- **Offline Mode**: Cache itineraries and weather data for offline access (planned feature).
+- **AI-Powered Itineraries**: Personalized, day-by-day plans using Gemini AI
+- **Weather Integration**: Real-time and forecast data (OpenWeather API)
+- **Cultural Insights**: Local tips, etiquette, and safety for major destinations
+- **Budget Management**: Smart cost estimation and expense tracking
+- **User Authentication**: Secure JWT login and session management
+- **Responsive UI**: Modern, mobile-first React interface
+- **Offline Mode**: Planned feature for cached itineraries and weather
 
 ---
 
@@ -46,13 +37,13 @@ JourneyAI/
 │   ├── models/                 # Mongoose schemas
 │   ├── routes/                 # Express routes (auth, trips, weather, ai, etc.)
 │   ├── middleware/             # Custom middleware
-│   ├── services/               # Service layer for external APIs
+│   ├── services/               # Service layer for AI, weather, images
 │   ├── server.js               # Main server file
-│   └── BACKEND.md              # Backend documentation
+│   └── BACKEND.md              # Backend quick reference
 ├── frontend/                   # React frontend application
 │   ├── src/                    # React source files
-│   │   ├── components/         # React components
-│   │   ├── hooks/              # Custom hooks
+│   │   ├── components/         # UI and feature components
+│   │   ├── hooks/              # Custom React hooks
 │   │   ├── services/           # API service functions
 │   │   ├── App.jsx             # Main App component
 │   │   └── main.jsx            # React entry point
@@ -60,15 +51,95 @@ JourneyAI/
 │   ├── index.html              # HTML template
 │   ├── vite.config.js          # Vite configuration
 │   └── eslint.config.js        # ESLint configuration
+├── SYSTEM_DOCUMENTATION.md     # System diagrams, data flow, deployment
+├── BACKEND_DOCUMENTATION.md    # Full backend API and architecture
+├── FRONTEND_DOCUMENTATION.md   # Full frontend architecture and UI
+├── WEATHER_INTEGRATION_SUMMARY.md # Weather API integration details
 └── package.json                # Root package.json for workspace management
 ```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- MongoDB Atlas or local MongoDB
+- API keys for OpenWeather and Gemini AI
+
+### Installation
+```bash
+git clone <your-repo-url>
+cd JourneyAI
+npm install
+cd backend && cp .env.example .env # Add your API keys and DB URI
+cd ../frontend && npm install
+```
+
+### Running the App
+```bash
+# From project root
+npm run dev          # Runs both frontend and backend in dev mode
+# Or run separately:
+npm run dev:backend  # Backend only
+npm run dev:frontend # Frontend only
+```
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- Node.js & Express.js
+- MongoDB Atlas + Mongoose
+- JWT Authentication
+- OpenWeather & Gemini AI APIs
+
+### Frontend
+- React 19, Vite, Tailwind CSS
+- React Router, Axios
+- Custom UI component library
+
+---
+
+## 📦 Deployment
+
+- **Frontend**: Vercel (static hosting, global CDN)
+- **Backend**: Render (Node.js server, auto-deploy from GitHub)
+- **Database**: MongoDB Atlas (cloud, multi-region)
+
+See [SYSTEM_DOCUMENTATION.md](SYSTEM_DOCUMENTATION.md) for deployment diagrams and details.
+
+---
+
+## 🧪 Testing & Validation
+
+- Backend: API endpoint tests, database tests, error handling
+- Frontend: Component rendering, API integration, UI/UX validation
+- See `test-trip-ai.js` and `backend/test-db.js` for examples
+
+---
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) (if present) or open an issue/PR on GitHub.
+
+---
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+*For full technical details, see the documentation files linked above. For architecture, data flow, and diagrams, see SYSTEM_DOCUMENTATION.md. For backend and API details, see BACKEND_DOCUMENTATION.md. For frontend and UI, see FRONTEND_DOCUMENTATION.md.*
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v16+)
 - MongoDB database
-- API keys for Google Maps, OpenWeather, and Gemini
+- API keys for OpenWeather and Gemini
 
 ### Installation
 
@@ -113,7 +184,7 @@ npm run dev:frontend
 - Node.js & Express.js
 - MongoDB with Mongoose
 - JWT Authentication
-- External APIs: Google Maps, OpenWeather, Gemini AI
+- External APIs: OpenWeather, Gemini AI
 
 ### Frontend
 - React 19
