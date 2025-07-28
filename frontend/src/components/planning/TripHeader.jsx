@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Calendar, Clock, Star, Share2, Download } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Star, Download } from 'lucide-react';
 
 const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
   // Helper function to format dates
@@ -132,10 +132,6 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-              </Button>
-              <Button size="sm" variant="outline">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
               </Button>
             </div>
           </div>
