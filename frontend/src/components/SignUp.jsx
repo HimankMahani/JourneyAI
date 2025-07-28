@@ -376,7 +376,7 @@ const SignUp = () => {
                         {errors.confirmPassword}
                       </div>
                     )}
-                    {formData.confirmPassword && !errors.confirmPassword && formData.password && (
+                    {formData.confirmPassword && !errors.confirmPassword && formData.password && formData.confirmPassword === formData.password && (
                       <div className="flex items-center text-green-500 text-sm mt-1">
                         <CheckCircle className="h-4 w-4 mr-1" />
                         Passwords match
