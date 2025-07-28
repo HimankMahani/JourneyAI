@@ -13,7 +13,6 @@ JourneyAI is a full-stack, AI-driven travel planning platform that delivers pers
 - [Backend API & Services](backend/BACKEND.md) | [Backend Full Docs](BACKEND_DOCUMENTATION.md)
 - [Frontend Architecture & UI](FRONTEND_DOCUMENTATION.md)
 - [Weather Integration](WEATHER_INTEGRATION_SUMMARY.md)
-- [Test Scripts & Examples](test-trip-ai.js, backend/test-db.js)
 
 ---
 
@@ -25,7 +24,7 @@ JourneyAI is a full-stack, AI-driven travel planning platform that delivers pers
 - **Budget Management**: Smart cost estimation and expense tracking
 - **User Authentication**: Secure JWT login and session management
 - **Responsive UI**: Modern, mobile-first React interface
-- **Offline Mode**: Planned feature for cached itineraries and weather
+
 
 ---
 
@@ -69,7 +68,6 @@ JourneyAI/
 
 ### Installation
 ```bash
-git clone <your-repo-url>
 cd JourneyAI
 npm install
 cd backend && cp .env.example .env # Add your API keys and DB URI
