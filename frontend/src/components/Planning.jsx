@@ -90,7 +90,6 @@ const normalizeTrip = (trip) => {
 
 // Function to get destination ID from destination name
 const getDestinationId = (destinationName) => {
-  console.log('Planning: Looking for destination ID for:', destinationName);
   
   const destinations = [
     { id: 1, name: 'Bali, Indonesia' },
@@ -113,7 +112,6 @@ const getDestinationId = (destinationName) => {
     d.name.toLowerCase().includes(destinationName.toLowerCase())
   );
   
-  console.log('Planning: Found destination:', destination);
   return destination ? destination.id : null;
 };
 
@@ -126,13 +124,6 @@ const getPreGeneratedItinerary = (destinationName) => {
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
   const { currentTrip, fetchTripById, regenerateTripItinerary } = useTrip();
-  
-  console.log('Planning: Component loaded with tripId:', tripId);
-  console.log('Planning: currentTrip available:', !!currentTrip);
-  if (currentTrip) {
-    console.log('Planning: currentTrip ID:', currentTrip._id || currentTrip.id);
-    console.log('Planning: currentTrip has itinerary:', !!(currentTrip.itinerary && currentTrip.itinerary.length > 0));
-  }
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
@@ -151,7 +142,6 @@ const Planning = () => {
 
   // Clear local state when tripId changes to prevent showing stale data
   useEffect(() => {
-    console.log('Planning: tripId changed, clearing local state');
     setTrip(null);
     setItinerary(null);
     setPackingList(null);
@@ -167,12 +157,10 @@ const Planning = () => {
       
       // If we have a tripId but no currentTrip OR currentTrip doesn't match, fetch the trip
       if (!currentTrip || !tripIdsMatch) {
-        console.log('Planning: Need to fetch trip - tripId:', tripId, 'currentTripId:', currentTripId, 'match:', tripIdsMatch);
         setIsLoading(true);
         fetchTripById(tripId)
           .then(fetchedTrip => {
             if (fetchedTrip) {
-              console.log('Planning: Successfully fetched trip:', fetchedTrip);
               // The context should update currentTrip automatically
             } else {
               console.error('Planning: Failed to fetch trip');
@@ -200,117 +188,21 @@ const Planning = () => {
     }
   }, [tripId, currentTrip, isLoading, fetchTripById]);
 
-  /*
-  useEffect(() => {
-    // Only fetch if we have a tripId, don't have a matching currentTrip, and haven't loaded this trip yet
-    if (tripId && !tripLoaded) {
-      // Check if currentTrip already matches AND has itinerary data
-      if (currentTrip && (currentTrip._id === tripId || currentTrip.id === tripId)) {
-        const hasItinerary = currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0;
-        
-        if (hasItinerary) {
-          console.log('Planning: currentTrip already matches tripId with itinerary, no fetch needed');
-          setTripLoaded(true);
-          setIsLoading(false);
-        } else {
-          console.log('Planning: currentTrip matches tripId but has no itinerary, fetching fresh data');
-          // Inline the loadTrip logic to avoid circular dependency
-          setIsLoading(true);
-          setTripLoaded(true); // Set this immediately to prevent race conditions
-          fetchTripById(tripId)
-            .then(fetchedTrip => {
-              if (fetchedTrip) {
-                console.log('Planning: Successfully fetched trip with itinerary');
-              } else {
-                console.error('Planning: fetchTripById returned null');
-                toast.error('Trip not found');
-              }
-            })
-            .catch(error => {
-              console.error('Planning: Failed to load trip:', error);
-              toast.error('Failed to load trip details');
-            })
-            .finally(() => {
-              setIsLoading(false);
-            });
-        }
-      } else {
-        console.log('Planning: Need to fetch trip, currentTrip does not match tripId');
-        // Inline the loadTrip logic to avoid circular dependency
-        setIsLoading(true);
-        setTripLoaded(true); // Set this immediately to prevent race conditions
-        fetchTripById(tripId)
-          .then(fetchedTrip => {
-            if (fetchedTrip) {
-              console.log('Planning: Successfully fetched trip with itinerary');
-            } else {
-              console.error('Planning: fetchTripById returned null');
-              toast.error('Trip not found');
-            }
-          })
-          .catch(error => {
-            console.error('Planning: Failed to load trip:', error);
-            toast.error('Failed to load trip details');
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      }
-    }
-    
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (isLoading && !currentTrip && !tripLoaded) {
-        console.log('Planning: Loading timeout, using fallback data');
-        
-        // Try to determine the destination from URL or use mock data
-        const urlPath = window.location.pathname;
-        let fallbackItinerary = mockItinerary;
-        let fallbackTrip = mockTrip;
-        
-        // If we're in a planning page, try to extract destination info from URL context
-        if (urlPath.includes('/planning/')) {
-          // For now, use mock data, but in future could extract from localStorage or other sources
-          fallbackItinerary = mockItinerary;
-          fallbackTrip = mockTrip;
-        }
-        
-        setItinerary(normalizeItinerary(fallbackItinerary));
-        setTrip(normalizeTrip(fallbackTrip));
-        setPackingList(mockPackingList);
-        setDestinationInfo(mockDestinationInfo);
-        setIsLoading(false);
-        setTripLoaded(true);
-      }
-    }, 10000); // 10 second timeout
-    
-    return () => clearTimeout(timeoutId);
-  }, [tripId, tripLoaded, isLoading, currentTrip, fetchTripById]);
-  */
-
   useEffect(() => {
     // Only process currentTrip if we're not loading and it matches the requested tripId
     if (currentTrip && !isLoading) {
-      console.log('Planning: Processing currentTrip data');
-      console.log('Planning: currentTrip:', currentTrip);
-      console.log('Planning: currentTrip.itinerary:', currentTrip.itinerary);
       
       const currentTripId = currentTrip._id || currentTrip.id;
       const tripIdsMatch = !tripId || currentTripId === tripId;
       
       if (tripIdsMatch) {
-        console.log('Planning: currentTrip matches requested tripId (or no tripId), using directly');
         setTrip(normalizeTrip(currentTrip));
         
         // If trip has itinerary, use it; otherwise fall back to pre-generated or mock data
         if (currentTrip.itinerary && Array.isArray(currentTrip.itinerary) && currentTrip.itinerary.length > 0) {
-          console.log('Planning: Using real itinerary from trip');
-          console.log('Planning: Raw itinerary:', currentTrip.itinerary);
           const normalizedItinerary = normalizeItinerary(currentTrip.itinerary);
-          console.log('Planning: Normalized itinerary:', normalizedItinerary);
           setItinerary(normalizedItinerary);
         } else {
-          console.log('Planning: Trip has no itinerary, using fallback');
           // Try to get pre-generated itinerary for this destination
           const destinationName = currentTrip.destination?.name || currentTrip.destination || '';
           const preGeneratedItinerary = getPreGeneratedItinerary(destinationName);
@@ -336,12 +228,9 @@ const Planning = () => {
         setDestinationInfo(currentTrip.destinationInfo || mockDestinationInfo);
         setIsLoading(false);
       } else {
-        console.log('Planning: currentTrip does not match requested tripId, waiting for correct trip');
-        console.log('Planning: tripId:', tripId, 'currentTripId:', currentTripId);
         // Don't use mismatched trip data - let the fetch effect handle it
       }
     } else if (!tripId && !currentTrip) {
-      console.log('Planning: Using mock data (no tripId and no currentTrip)');
       // Only use mock data if there's no tripId and no currentTrip
       setTrip(normalizeTrip(mockTrip));
       setItinerary(normalizeItinerary(mockItinerary));
@@ -355,11 +244,9 @@ const Planning = () => {
     // Fetch weather info when trip is loaded
     if (trip && trip.destination) {
       const city = typeof trip.destination === 'string' ? trip.destination : trip.destination.name;
-      console.log('Planning: Fetching weather for city:', city);
       if (city) {
         weatherService.getCurrentWeather({ city })
           .then(weatherData => {
-            console.log('Planning: Weather data received:', weatherData);
             setWeather(weatherData);
           })
           .catch(err => {
@@ -386,8 +273,7 @@ const Planning = () => {
     setShowNoteForm(prev => ({ ...prev, [key]: false }));
   };
 
-  const handleChangeRequest = (day, activityIndex, type) => {
-    console.log(`Change request for Day ${day}, Activity ${activityIndex}, Type: ${type}`);
+  const handleChangeRequest = (day, activityIndex) => {
     // This would typically call an API to get alternative suggestions
     const key = `day-${day}-activity-${activityIndex}`;
     setShowSuggestions(prev => ({ ...prev, [key]: !prev[key] }));
@@ -417,12 +303,9 @@ const Planning = () => {
         interests: Array.from(new Set(interests)) // Remove duplicates
       });
       
-      console.log('Planning: Regenerate result:', result);
-      
       if (result.success) {
         // Handle different response structures from TripContext
         const updatedTrip = result.data || result.trip || currentTrip;
-        console.log('Planning: Updated trip from regenerate:', updatedTrip);
         
         if (updatedTrip) {
           // Update the local state with the new data

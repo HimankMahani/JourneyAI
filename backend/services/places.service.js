@@ -15,11 +15,9 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 export const getGooglePlacesPhoto = async (placeName) => {
   try {
     if (!GOOGLE_MAPS_API_KEY) {
-      console.log('Google Maps API key not configured');
       return null;
     }
 
-    console.log(`Searching Google Places for: ${placeName}`);
 
     // First, search for the place to get place_id
     const searchResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
@@ -36,7 +34,6 @@ export const getGooglePlacesPhoto = async (placeName) => {
         const photoReference = place.photos[0].photo_reference;
         const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_MAPS_API_KEY}`;
         
-        console.log(`Found Google Places photo for: ${placeName}`);
         return photoUrl;
       }
     }
@@ -55,13 +52,11 @@ export const getGooglePlacesPhoto = async (placeName) => {
  */
 export const getWikimediaPhoto = async (placeName) => {
   try {
-    console.log(`Searching Wikimedia for: ${placeName}`);
 
     // Search for Wikipedia article about the place
     const searchResponse = await axios.get('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(placeName));
     
     if (searchResponse.data && searchResponse.data.originalimage) {
-      console.log(`Found Wikimedia photo for: ${placeName}`);
       return searchResponse.data.originalimage.source;
     }
 
@@ -76,7 +71,6 @@ export const getWikimediaPhoto = async (placeName) => {
       try {
         const response = await axios.get('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(variation));
         if (response.data && response.data.originalimage) {
-          console.log(`Found Wikimedia photo for: ${placeName} (using variation: ${variation})`);
           return response.data.originalimage.source;
         }
       } catch (err) {
@@ -105,7 +99,6 @@ export const getWikimediaPhoto = async (placeName) => {
  */
 export const searchPlacePhotos = async (placeName, maxPhotos = 1) => {
   try {
-    console.log(`Searching for place photos: ${placeName}`);
     
     if (!placeName) {
       throw new Error('Place name is required');
@@ -149,7 +142,6 @@ export const searchPlacePhotos = async (placeName, maxPhotos = 1) => {
     }
 
     if (photos.length > 0) {
-      console.log(`Found ${photos.length} photos for: ${placeName}`);
       return {
         success: true,
         place: {
@@ -160,7 +152,6 @@ export const searchPlacePhotos = async (placeName, maxPhotos = 1) => {
       };
     }
     
-    console.log(`No photos found for: ${placeName}`);
     return {
       success: false,
       message: 'No photos found',
@@ -189,26 +180,22 @@ export const getDestinationImage = async (placeName) => {
     }
 
     const cleanPlace = placeName.trim();
-    console.log(`Getting destination image for: ${cleanPlace}`);
 
     // Priority 1: Try curated images first (highest quality, same as Destinations tab)
     const curatedImage = getCuratedDestinationImage(cleanPlace);
     if (curatedImage) {
-      console.log(`Using curated image for: ${cleanPlace}`);
       return curatedImage;
     }
 
     // Priority 2: Try Google Places API (most accurate for locations)
     const googlePhoto = await getGooglePlacesPhoto(cleanPlace);
     if (googlePhoto) {
-      console.log(`Using Google Places photo for: ${cleanPlace}`);
       return googlePhoto;
     }
 
     // Priority 3: Try Wikimedia Commons (Wikipedia photos)
     const wikimediaPhoto = await getWikimediaPhoto(cleanPlace);
     if (wikimediaPhoto) {
-      console.log(`Using Wikimedia photo for: ${cleanPlace}`);
       return wikimediaPhoto;
     }
 
@@ -216,14 +203,12 @@ export const getDestinationImage = async (placeName) => {
     if (PEXELS_API_KEY) {
       const pexelsPhoto = await getPexelsLocationPhoto(cleanPlace);
       if (pexelsPhoto) {
-        console.log(`Using Pexels photo for: ${cleanPlace}`);
         return pexelsPhoto;
       }
     }
 
     // Priority 5: Smart fallback based on destination type
     const smartFallback = getSmartTravelFallback(cleanPlace);
-    console.log(`Using smart fallback for "${placeName}": ${smartFallback}`);
     return smartFallback;
 
   } catch (error) {
@@ -283,7 +268,6 @@ export const getPexelsLocationPhoto = async (placeName) => {
           });
           
           if (relevantPhoto) {
-            console.log(`Found relevant Pexels photo for ${placeName}: ${relevantPhoto.alt}`);
             return relevantPhoto.src.medium;
           }
         }
@@ -390,7 +374,6 @@ const photoCache = new Map();
  */
 export const clearPhotoCache = () => {
   photoCache.clear();
-  console.log('Photo cache cleared');
 };
 
 /**
@@ -407,14 +390,12 @@ export const getCachedPlacePhoto = async (placeName) => {
   
   // Check cache first
   if (photoCache.has(cacheKey)) {
-    console.log(`Using cached photo for: ${placeName}`);
     return photoCache.get(cacheKey);
   }
 
   try {
     const imageUrl = await getDestinationImage(placeName);
     photoCache.set(cacheKey, imageUrl);
-    console.log(`Cached new photo for: ${placeName}`);
     return imageUrl;
   } catch (error) {
     console.error(`Error fetching photo for ${placeName}:`, error);

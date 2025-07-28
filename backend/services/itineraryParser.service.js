@@ -28,7 +28,6 @@ export const parseItineraryJSON = (jsonText, startDate) => {
     
     // Handle incomplete JSON by trying to fix common issues
     if (!jsonOnly.endsWith(']')) {
-      console.log('JSON appears incomplete, attempting to fix...');
       // Find the last complete object
       let lastCompleteObject = jsonOnly.lastIndexOf('    }');
       if (lastCompleteObject !== -1) {
@@ -44,8 +43,6 @@ export const parseItineraryJSON = (jsonText, startDate) => {
       }
     }
     
-    console.log('Extracted JSON length:', jsonOnly.length);
-    console.log('JSON preview:', jsonOnly.substring(0, 200) + '...');
     
     let parsedData;
     try {
@@ -90,7 +87,6 @@ export const parseItineraryJSON = (jsonText, startDate) => {
           }
         }
         
-        console.log('Open braces:', openBraces, 'Open brackets:', openBrackets);
         
         // Close any open objects/arrays
         while (openBraces > 0) {
@@ -102,10 +98,8 @@ export const parseItineraryJSON = (jsonText, startDate) => {
           openBrackets--;
         }
         
-        console.log('Attempting to parse fixed JSON...');
         try {
           parsedData = JSON.parse(fixedJson);
-          console.log('Successfully parsed fixed JSON');
         } catch (fixError) {
           console.error('Failed to parse fixed JSON:', fixError.message);
           throw new Error(`JSON parsing failed even after attempted fix: ${parseError.message}`);
@@ -208,7 +202,6 @@ export const parseItineraryJSON = (jsonText, startDate) => {
           
           // Debug logging for type normalization
           if (originalType !== normalizedType) {
-            console.log(`Type normalization: "${originalType}" -> "${normalizedType}"`);
           }
           
           // Sanitize location: convert object to string if needed
@@ -243,7 +236,6 @@ export const parseItineraryJSON = (jsonText, startDate) => {
       };
     });
     
-    console.log('Successfully parsed JSON itinerary with', processedItinerary.length, 'days');
     return processedItinerary;
     
   } catch (error) {

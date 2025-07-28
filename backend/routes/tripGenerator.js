@@ -127,7 +127,6 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
   // Calculate total budget
   const totalBudget = Math.round(dailyRate * tripDuration * numTravelers * destinationFactor);
   
-  console.log('Dynamic budget calculation:', { 
     level, 
     destination,
     destinationFactor,
@@ -195,7 +194,6 @@ router.post('/itinerary', auth, async (req, res) => {
     let generatedLocalTips;
     
     try {
-      console.log('Generating itinerary from', fromLocation, 'to', destination);
       generatedItinerary = await generateTravelItinerary({
         from: fromLocation,
         destination,
@@ -205,12 +203,9 @@ router.post('/itinerary', auth, async (req, res) => {
         budget,
         travelers
       }, fromLocation);
-      console.log('Itinerary generated successfully');
       
       // Step 2: Generate local tips
-      console.log('Generating local tips for destination:', destination);
       generatedLocalTips = await generateLocalTips(destination);
-      console.log('Local tips generated successfully');
     } catch (error) {
       console.error('Error using Gemini API:', error);
       return res.status(500).json({
@@ -224,7 +219,6 @@ router.post('/itinerary', auth, async (req, res) => {
     const tripTitle = title || `Trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`;
     
     // Debug logging for travelers
-    console.log('Trip generation - travelers data:', {
       originalTravelers: travelers,
       type: typeof travelers,
       parsed: parseInt(travelers, 10) || 1
@@ -262,7 +256,6 @@ router.post('/itinerary', auth, async (req, res) => {
     const savedTrip = await newTrip.save();
     const tripId = savedTrip._id.toString();
 
-    console.log('Created trip with ID:', tripId);
 
     // Step 4: Store the AI response in MongoDB
     try {
@@ -296,7 +289,6 @@ router.post('/itinerary', auth, async (req, res) => {
         }
       );
       
-      console.log('Stored AI responses:', { 
         itineraryId: itineraryResponse._id, 
         tipsId: tipsResponse._id 
       });
@@ -311,12 +303,10 @@ router.post('/itinerary', auth, async (req, res) => {
       const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
       
       if (storedItinerary) {
-        console.log('Retrieved stored AI response for parsing');
         
         parsedItinerary = parseStoredAIResponse(storedItinerary, startDate);
         
         if (parsedItinerary && parsedItinerary.length > 0) {
-          console.log('Successfully parsed itinerary with', parsedItinerary.length, 'days');
           // Validate the parsed itinerary
           const validation = validateItinerary(parsedItinerary);
           if (validation.isValid) {
@@ -326,10 +316,8 @@ router.post('/itinerary', auth, async (req, res) => {
             // Normalize the itinerary to fix issues
             const normalizedItinerary = normalizeItinerary(parsedItinerary, startDate);
             savedTrip.itinerary = normalizedItinerary;
-            console.log('Applied normalization to fix itinerary issues');
           }
         } else {
-          console.log('parseStoredAIResponse returned empty or null result');
         }
       } else {
         console.warn('Could not retrieve stored AI response for parsing');
@@ -426,7 +414,6 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
         }
       );
       
-      console.log('Stored regenerated AI response:', aiResponse._id);
       
       // Clean up old responses (keep only latest 3)
       await cleanupOldAIResponses(tripId, 'itinerary', 3);
@@ -446,12 +433,10 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
       const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
       
       if (storedItinerary) {
-        console.log('Retrieved stored AI response for regeneration parsing');
         
         const parsedItinerary = parseStoredAIResponse(storedItinerary, trip.startDate);
         
         if (parsedItinerary && parsedItinerary.length > 0) {
-          console.log('Successfully parsed regenerated itinerary with', parsedItinerary.length, 'days');
           
           // Validate and normalize the parsed itinerary
           const validation = validateItinerary(parsedItinerary);
@@ -461,10 +446,8 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
             console.warn('Regenerated itinerary validation failed:', validation.errors);
             const normalizedItinerary = normalizeItinerary(parsedItinerary, trip.startDate);
             trip.itinerary = normalizedItinerary;
-            console.log('Applied normalization to fix regenerated itinerary issues');
           }
         } else {
-          console.log('parseStoredAIResponse returned empty result for regeneration');
         }
       } else {
         console.warn('Could not retrieve stored AI response for regeneration parsing');
@@ -525,12 +508,10 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
     
     // Parse the itinerary from the stored MongoDB document
     try {
-      console.log('Reparsing itinerary from stored MongoDB document for trip:', tripId);
       
       const parsedItinerary = parseStoredAIResponse(storedItinerary, trip.startDate);
       
       if (parsedItinerary && parsedItinerary.length > 0) {
-        console.log('Successfully reparsed itinerary with', parsedItinerary.length, 'days');
         
         // Validate and normalize the parsed itinerary
         const validation = validateItinerary(parsedItinerary);
@@ -540,7 +521,6 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
           console.warn('Reparsed itinerary validation failed:', validation.errors);
           const normalizedItinerary = normalizeItinerary(parsedItinerary, trip.startDate);
           trip.itinerary = normalizedItinerary;
-          console.log('Applied normalization to fix reparsed itinerary issues');
         }
         
         // Save the updated trip
@@ -705,7 +685,6 @@ router.get('/place-photo/:placeName', auth, async (req, res) => {
       });
     }
 
-    console.log(`Fetching photo for place: ${placeName}`);
     
     const photoUrl = await getCachedPlacePhoto(placeName);
     
@@ -741,7 +720,6 @@ router.post('/place-photos', auth, async (req, res) => {
       });
     }
 
-    console.log(`Fetching photos for ${places.length} places`);
     
     const photoPromises = places.map(async (place) => {
       const photoUrl = await getCachedPlacePhoto(place);

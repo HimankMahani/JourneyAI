@@ -64,7 +64,6 @@ const TravelPlanning = () => {
       };
 
       const result = await generateAIItinerary(preferences);
-      console.log('Trip generation result:', result);
       
       // Handle all response formats:
       // 1. { success: true, data: { ...tripData } } (current format)
@@ -73,14 +72,12 @@ const TravelPlanning = () => {
       const trip = result.data || result.trip || result;
 
       if ((result.success || trip?._id) && trip?._id) {
-        console.log('Trip data:', trip);
         toast.success("Trip itinerary generated successfully!");
         setTimeout(() => {
           navigate(`/planning/${trip._id}`);
         }, 100);
       } else {
         const errorMessage = result.error || result.message || "Failed to generate itinerary";
-        console.error('Trip generation failed:', errorMessage, result);
         toast.error(errorMessage);
         setIsPlanning(false);
       }

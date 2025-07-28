@@ -13,7 +13,6 @@ const TripCard = ({ trip, formatDate, getStatusColor, getDestinationName, getBud
   };
 
   const handleImageError = (e) => {
-    console.log(`Image load error for ${destinationName}:`, e.target.src);
     // Set a high-quality fallback
     e.target.src = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
   };

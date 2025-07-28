@@ -36,8 +36,6 @@ export const generateContent = async (prompt, options = {}) => {
       throw new Error('Gemini API key is not configured');
     }
 
-    console.log('Calling Gemini API with prompt:', prompt.substring(0, 100) + '...');
-    
     // Override default generation config with any provided options
     const generationConfig = {
       temperature: options.temperature || 0.7,

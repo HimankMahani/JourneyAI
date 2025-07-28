@@ -161,7 +161,6 @@ const DestinationCard = ({ destination }) => {
 
     try {
       setIsCreating(true);
-      console.log('Creating trip for destination:', destination.name);
       
       // Create a trip from the destination
       const tripData = {
@@ -175,9 +174,7 @@ const DestinationCard = ({ destination }) => {
         presetImage: destination.image
       };
 
-      console.log('Trip data:', tripData);
       const newTrip = await createTripFromDestination(tripData);
-      console.log('Created trip:', newTrip);
       
       if (newTrip) {
         if (newTrip.generatedBy === 'pre-generated') {

@@ -16,7 +16,6 @@ import mongoose from 'mongoose';
  */
 export const storeAIResponse = async (tripId, userId, response, type = 'itinerary', metadata = {}) => {
   try {
-    console.log(`Storing AI response for trip ${tripId}, user ${userId}, type ${type}`);
     
     const aiResponse = new AIResponse({
       tripId: new mongoose.Types.ObjectId(tripId),
@@ -28,7 +27,6 @@ export const storeAIResponse = async (tripId, userId, response, type = 'itinerar
     });
     
     const savedResponse = await aiResponse.save();
-    console.log(`Stored AI response with ID: ${savedResponse._id}`);
     
     return savedResponse;
   } catch (error) {
@@ -46,7 +44,6 @@ export const storeAIResponse = async (tripId, userId, response, type = 'itinerar
  */
 export const retrieveAIResponse = async (tripId, type = 'itinerary', responseId = null) => {
   try {
-    console.log(`Retrieving AI response for trip ${tripId}, type ${type}`);
     
     let aiResponse;
     
@@ -57,10 +54,8 @@ export const retrieveAIResponse = async (tripId, type = 'itinerary', responseId 
     }
     
     if (aiResponse) {
-      console.log(`Retrieved AI response with ID: ${aiResponse._id}`);
       return aiResponse;
     } else {
-      console.log(`No AI response found for trip ${tripId}, type ${type}`);
       return null;
     }
   } catch (error) {
@@ -77,11 +72,9 @@ export const retrieveAIResponse = async (tripId, type = 'itinerary', responseId 
  */
 export const listAIResponses = async (tripId, type = null) => {
   try {
-    console.log(`Listing AI responses for trip ${tripId}, type ${type || 'all'}`);
     
     const aiResponses = await AIResponse.getAllVersions(tripId, type);
     
-    console.log(`Found ${aiResponses.length} AI responses for trip ${tripId}`);
     return aiResponses.map(response => ({
       id: response._id,
       type: response.type,
@@ -105,11 +98,9 @@ export const listAIResponses = async (tripId, type = null) => {
  */
 export const cleanupOldAIResponses = async (tripId, type = 'itinerary', keepCount = 3) => {
   try {
-    console.log(`Cleaning up old AI responses for trip ${tripId}, type ${type}, keeping ${keepCount}`);
     
     const deletedCount = await AIResponse.cleanupOldVersions(tripId, type, keepCount);
     
-    console.log(`Cleaned up ${deletedCount} old AI response documents for trip ${tripId} type ${type}`);
     return deletedCount;
   } catch (error) {
     console.error('Error cleaning up old AI responses:', error);
@@ -123,7 +114,6 @@ export const cleanupOldAIResponses = async (tripId, type = 'itinerary', keepCoun
  */
 export const getStorageStats = async () => {
   try {
-    console.log('Getting storage statistics from MongoDB');
     
     // Get total count of AI responses
     const totalResponses = await AIResponse.countDocuments();
@@ -173,7 +163,6 @@ export const getStorageStats = async () => {
       collectionName: 'airesponses'
     };
     
-    console.log('Storage statistics:', stats);
     return stats;
   } catch (error) {
     console.error('Error getting storage stats:', error);

@@ -43,7 +43,6 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
     setWeatherError(null);
     
     try {
-      console.log('DestinationInfoTab: Fetching weather for:', destinationName);
       
       // Fetch both current weather and forecast
       const [currentWeather, forecastData] = await Promise.all([
@@ -51,8 +50,6 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
         weatherService.getForecast({ city: destinationName })
       ]);
       
-      console.log('DestinationInfoTab: Current weather:', currentWeather);
-      console.log('DestinationInfoTab: Forecast:', forecastData);
       
       setLocalWeather(currentWeather);
       setForecast(forecastData);

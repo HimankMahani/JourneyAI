@@ -94,7 +94,6 @@ export const TripProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await tripService.generateAIItinerary(preferences);
-      console.log('generateAIItinerary response:', response);
       
       // Handle different response structures:
       // 1. { success: true, data: { ...tripData } } - current format
@@ -104,9 +103,7 @@ export const TripProvider = ({ children }) => {
       
       // Immediately set the generated trip as current trip to avoid fetch issues
       if (trip) {
-        console.log('Setting current trip:', trip);
         setCurrentTrip(trip);
-        console.log('TripContext: Set generated trip as current trip:', trip._id);
         
         // Also add to trips list if not already there
         setTrips(prev => {
