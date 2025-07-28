@@ -127,15 +127,6 @@ function getBudgetAmount(budgetLevel, destination = '', startDate = null, endDat
   // Calculate total budget
   const totalBudget = Math.round(dailyRate * tripDuration * numTravelers * destinationFactor);
   
-    level, 
-    destination,
-    destinationFactor,
-    tripDuration,
-    travelers: numTravelers,
-    dailyRate,
-    totalBudget
-  });
-  
   return totalBudget;
 }
 
@@ -218,12 +209,6 @@ router.post('/itinerary', auth, async (req, res) => {
     // Step 3: Create a new trip with the generated itinerary
     const tripTitle = title || `Trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`;
     
-    // Debug logging for travelers
-      originalTravelers: travelers,
-      type: typeof travelers,
-      parsed: parseInt(travelers, 10) || 1
-    });
-    
     const budgetAmount = getBudgetAmount(budget, destination, startDate, endDate, travelers);
     
     const newTrip = new Trip({
@@ -289,9 +274,6 @@ router.post('/itinerary', auth, async (req, res) => {
         }
       );
       
-        itineraryId: itineraryResponse._id, 
-        tipsId: tipsResponse._id 
-      });
     } catch (storageError) {
       console.error('Failed to store AI responses:', storageError);
       // Continue with trip creation even if storage fails
