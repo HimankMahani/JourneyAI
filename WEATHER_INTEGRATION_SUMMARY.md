@@ -83,7 +83,7 @@
 ### Backend Tests (✅ Completed)
 ```bash
 # OpenWeather API direct test
-curl "https://api.openweathermap.org/data/2.5/weather?q=Paris&units=metric&appid=5bb68cc86d546782dd289b409e75c51f"
+curl "https://api.openweathermap.org/data/2.5/weather?q=Paris&units=metric&appid=YOUR_OPENWEATHER_API_KEY"
 # Result: ✅ Returns valid weather data
 ```
 
