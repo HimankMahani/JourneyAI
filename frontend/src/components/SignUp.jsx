@@ -406,10 +406,8 @@ const SignUp = () => {
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                       <div className="flex items-center justify-center relative z-10">
-                        {isLoading ? (
+                        {isLoading && (
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                        ) : (
-                          <UserPlus className="mr-2 h-5 w-5" />
                         )}
                         {isLoading ? "Creating..." : "Create Account"}
                       </div>
