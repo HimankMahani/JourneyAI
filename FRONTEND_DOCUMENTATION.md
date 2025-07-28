@@ -12,7 +12,31 @@ JourneyAI Frontend is a modern React-based single-page application (SPA) that pr
 - **Routing**: React Router DOM 6.30.1
 - **HTTP Client**: Axios 1.10.0
 - **State Management**: React Context API
-- **UI Components**: Custom components with Lucide React icons
+- **UI Components**: Custom componen### Security Considerations
+
+### Authentication Security
+- JWT token storage in localStorage
+- Automatic token refresh
+- Protected route implementation
+- Session timeout handling
+
+### Data Validation
+- Client-side input validation
+- XSS prevention
+- CSRF protection
+- Secure API communication
+
+### Privacy Features
+- User data protection
+- Secure token handling
+- Privacy-focused analytics
+- GDPR compliance considerations
+
+### Production Security
+- Debug information removal
+- Clean production builds
+- Secure environment variable handling
+- Error message sanitizationt icons
 - **Notifications**: React Hot Toast 2.5.2, Sonner 2.0.6
 - **Effects**: TSParticles 3.8.1
 - **Development**: ESLint 9.25.0
@@ -55,10 +79,12 @@ frontend/src/
 │   ├── Footer.jsx       # Site footer
 │   ├── SignIn.jsx       # Authentication component
 │   ├── SignUp.jsx       # Registration component
+│   ├── ForgotPassword.jsx # Password recovery component
 │   ├── TravelPlanning.jsx # Main planning interface
 │   ├── Planning.jsx     # Trip planning page
 │   ├── Destinations.jsx # Destinations showcase
 │   ├── Booking.jsx      # My trips/bookings page
+│   ├── TripCard.jsx     # Individual trip display card
 │   └── ProtectedRoute.jsx # Route protection
 ├── contexts/            # React Context providers
 │   ├── AuthContext.jsx  # Authentication state management
@@ -128,6 +154,14 @@ frontend/src/
 // Account creation
 ```
 
+#### ForgotPassword Component (`ForgotPassword.jsx`)
+```javascript
+// Password recovery interface
+// Email input for reset
+// Backend integration for password reset
+// User feedback and success messages
+```
+
 #### ProtectedRoute Component (`ProtectedRoute.jsx`)
 ```javascript
 // Route protection wrapper
@@ -165,6 +199,15 @@ frontend/src/
 // Real-time trip generation
 ```
 
+#### TripCard Component (`TripCard.jsx`)
+```javascript
+// Individual trip display card
+// Trip information summary
+// Navigation to trip details
+// Image handling with fallbacks
+// Responsive card layout
+```
+
 #### Planning Component (`Planning.jsx`)
 ```javascript
 // Detailed trip planning interface
@@ -182,6 +225,18 @@ frontend/src/
 // Edit capabilities
 // Status indicators
 // Date and destination display
+// Regenerate itinerary functionality
+// Budget display and traveler count
+```
+
+#### ActivityCard Component
+```javascript
+// Individual activity display within itinerary
+// Activity details (time, location, description)
+// Cost information and duration
+// Activity type categorization
+// Interactive elements for activity management
+// Photo integration for activities
 ```
 
 #### TabNavigation Component
@@ -195,25 +250,28 @@ frontend/src/
 #### ItineraryTab Component
 ```javascript
 // Day-by-day itinerary display
-// Activity cards
+// Activity cards with ActivityCard components
 // Time-based organization
 // Interactive elements
+// Activity suggestions and modifications
 ```
 
 #### DestinationInfoTab Component
 ```javascript
-// Weather data display
-// Cultural information
+// Weather data display with current conditions
+// Cultural information and local insights
 // Local tips and recommendations
-// Safety information
+// Safety information and travel advisories
+// Dynamic weather integration
 ```
 
 #### PackingTab Component
 ```javascript
 // Packing list management
-// Item categorization
+// Item categorization by type
 // Check-off functionality
 // Weather-based suggestions
+// Custom item addition
 ```
 
 ### UI Components (`components/ui/`)
@@ -243,6 +301,38 @@ frontend/src/
 // Text truncation
 ```
 
+#### GradientBadge Component
+```javascript
+// Enhanced badge with gradient styling
+// Premium visual appearance
+// Color gradient variants
+// Text and icon support
+```
+
+#### AI Button Component
+```javascript
+// Specialized button for AI interactions
+// Loading states for AI operations
+// Custom styling for AI features
+// Integration with AI services
+```
+
+#### Separator Component
+```javascript
+// Visual separator element
+// Horizontal and vertical orientations
+// Customizable styling
+// Spacing control
+```
+
+#### PlanningPageSkeleton Component
+```javascript
+// Loading placeholder for planning page
+// Animated skeleton elements
+// Maintains layout during loading
+// Responsive skeleton structure
+```
+
 #### Skeleton Component
 ```javascript
 // Loading placeholders
@@ -250,6 +340,24 @@ frontend/src/
 // Various shapes and sizes
 // Accessibility support
 ```
+
+## Recent Optimizations and Improvements
+
+### Code Cleanup (Latest Updates)
+- **Console Statement Removal**: All debug console.log statements removed from production code
+- **Commented Code Cleanup**: Large commented-out code blocks removed for cleaner codebase
+- **Unused Feature Removal**: Non-functional UI elements (like unused Share buttons) removed
+- **Import Optimization**: Unused imports cleaned up across components
+
+### Performance Enhancements
+- **Reduced Bundle Size**: Removal of debug code and unused imports
+- **Cleaner Console Output**: Production builds no longer show debug information
+- **Optimized Component Structure**: Streamlined component hierarchy
+
+### Weather Integration Improvements
+- **Real-time Weather Data**: Enhanced weather service integration
+- **Dynamic Weather Display**: Weather data integrated into destination information
+- **Fallback Handling**: Graceful degradation when weather services are unavailable
 
 ## State Management
 
@@ -307,6 +415,14 @@ const TripContext = createContext();
 // Returns: { trips, currentTrip, createTrip, updateTrip }
 // Handles trip CRUD operations
 // Manages loading states
+```
+
+#### usePlacePhoto Hook (`hooks/usePlacePhoto.js`)
+```javascript
+// Google Places photo integration
+// Handles photo fetching for destinations
+// Caching and error handling
+// Fallback image management
 ```
 
 ## API Service Layer
