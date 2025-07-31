@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import Header from './components/Header'
@@ -15,6 +15,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { TripProvider } from './contexts/TripContext'
 import { Toaster } from 'sonner'
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create a layout component to avoid repetition
 const Layout = ({ children }) => (
@@ -41,6 +44,11 @@ const HomePage = () => (
 );
 
 const App = () => {
+  useEffect(() => {
+    // Ping backend to wake it up
+    axios.get(`${API_BASE_URL}/auth/ping`).catch(() => {});
+  }, []);
+
   return (
     <Router>
       <AuthProvider>

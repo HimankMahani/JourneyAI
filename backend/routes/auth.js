@@ -107,4 +107,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// @route   GET /api/auth/ping
+// @desc    Test route
+router.get('/ping', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend awake' });
+});
+
 export default router;
