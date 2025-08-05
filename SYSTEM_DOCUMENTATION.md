@@ -269,9 +269,9 @@ Updates         (axios)      (Mongoose)    (Real-time)
 │  ┌─────────────────────────────────────────────────────────────────┐       │
 │  │                        DATA MODELS                              │       │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌──────────┐  │       │
-│  │  │    User     │ │    Trip     │ │  Location   │ │AIResponse│  │       │
-│  │  │ (Mongoose)  │ │ (Mongoose)  │ │ (Mongoose)  │ │(Mongoose)│  │       │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ └──────────┘  │       │
+│  │  │    User     │ │    Trip     │ │AIResponse│            │       │
+│  │  │ (Mongoose)  │ │ (Mongoose)  │ │(Mongoose)│            │       │
+│  │  └─────────────┘ └─────────────┘ └──────────┘            │       │
 │  └─────────────────────────────────────────────────────────────────┘       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -283,23 +283,23 @@ Updates         (axios)      (Mongoose)    (Real-time)
 │                              MONGODB ATLAS                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │     USERS       │    │      TRIPS      │    │   LOCATIONS     │         │
-│  │                 │    │                 │    │                 │         │
-│  │ _id (ObjectId)  │◄──┐│ _id (ObjectId)  │    │ _id (ObjectId)  │         │
-│  │ email (String)  │   ││ user (ObjectId) │───►│ name (String)   │         │
-│  │ password (Hash) │   ││ title (String)  │    │ country (String)│         │
-│  │ firstName       │   ││ description     │    │ placeId (String)│         │
-│  │ lastName        │   ││ destination     │    │ coordinates     │         │
-│  │ location        │   ││ startDate       │    │ photos (Array)  │         │
-│  │ createdAt       │   ││ endDate         │    │ details (Object)│         │
-│  │ updatedAt       │   ││ budget          │    └─────────────────┘         │
-│  └─────────────────┘   ││ itinerary[]     │                                │
-│                        ││ travelers       │    ┌─────────────────┐         │
-│                        ││ status          │    │  AI_RESPONSES   │         │
-│                        ││ createdAt       │    │                 │         │
-│                        ││ updatedAt       │    │ _id (ObjectId)  │         │
-│                        │└─────────────────┘    │ userId (Ref)    │───┐     │
+│  ┌─────────────────┐    ┌─────────────────┐                                  │
+│  │     USERS       │    │      TRIPS      │                                  │
+│  │                 │    │                 │                                  │
+│  │ _id (ObjectId)  │◄──┐│ _id (ObjectId)  │                                  │
+│  │ email (String)  │   ││ user (ObjectId) │                                  │
+│  │ password (Hash) │   ││ title (String)  │                                  │
+│  │ firstName       │   ││ description     │                                  │
+│  │ lastName        │   ││ destination     │                                  │
+│  │ location        │   ││ startDate       │                                  │
+│  │ createdAt       │   ││ endDate         │                                  │
+│  │ updatedAt       │   ││ budget          │                                  │
+│  └─────────────────┘   ││ itinerary[]     │                                  │
+│                        ││ travelers       │    ┌─────────────────┐           │
+│                        ││ status          │    │  AI_RESPONSES   │           │
+│                        ││ createdAt       │    │                 │           │
+│                        ││ updatedAt       │    │ _id (ObjectId)  │           │
+│                        │└─────────────────┘    │ userId (Ref)    │───┐       │
 │                        │                       │ queryType       │   │     │
 │                        │ ┌─────────────────┐   │ query (Object)  │   │     │
 │                        │ │   ITINERARY     │   │ response (Obj)  │   │     │
@@ -322,7 +322,6 @@ Updates         (axios)      (Mongoose)    (Real-time)
 │                          │ users.email     │                               │
 │                          │ trips.user      │                               │
 │                          │ trips.startDate │                               │
-│                          │ locations.name  │                               │
 │                          └─────────────────┘                               │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
