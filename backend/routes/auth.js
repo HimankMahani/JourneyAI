@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { auth } from '../middleware/auth.js';
+import { notifyUserSignup } from '../services/discord.service.js';
 
 const router = express.Router();
 
@@ -42,6 +43,18 @@ router.post('/register', async (req, res) => {
     });
 
     await user.save();
+
+    // Send Discord notification for new user signup
+    try {
+      await notifyUserSignup({
+        email: user.email,
+        name: `${firstName} ${lastName}`,
+        location: locationData
+      });
+    } catch (discordError) {
+      console.error('Failed to send Discord notification for signup:', discordError);
+      // Don't fail the request if Discord notification fails
+    }
 
     // Create JWT token
     const token = jwt.sign(

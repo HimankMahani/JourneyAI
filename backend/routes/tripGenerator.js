@@ -21,6 +21,7 @@ import {
   getCachedPlacePhoto,
   getDestinationImage
 } from '../services/places.service.js';
+import { notifyItineraryGeneration } from '../services/discord.service.js';
 
 // Ensure environment variables are loaded
 dotenv.config();
@@ -311,6 +312,23 @@ router.post('/itinerary', auth, async (req, res) => {
 
     // Save the updated trip with parsed itinerary
     const finalTrip = await savedTrip.save();
+
+    // Send Discord notification for itinerary generation
+    try {
+      await notifyItineraryGeneration({
+        destination,
+        startDate,
+        endDate,
+        travelers,
+        budget,
+        userEmail: req.user?.email || req.userEmail,
+        from: fromLocation,
+        interests
+      });
+    } catch (discordError) {
+      console.error('Failed to send Discord notification:', discordError);
+      // Don't fail the request if Discord notification fails
+    }
 
     // Ensure the response always includes the itinerary (even if empty)
     const responseData = {
