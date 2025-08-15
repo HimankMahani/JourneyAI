@@ -47,6 +47,18 @@ const App = () => {
   useEffect(() => {
     // Ping backend to wake it up
     axios.get(`${API_BASE_URL}/auth/ping`).catch(() => {});
+    
+    // Send visit details to backend for Discord notification
+    fetch(`${API_BASE_URL}/visit/notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: window.location.href,
+        screen: `${window.innerWidth}x${window.innerHeight}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language
+      })
+    }).catch(err => console.error("Visit tracking failed:", err));
   }, []);
 
   return (

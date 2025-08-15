@@ -1,5 +1,5 @@
 import express from 'express';
-import { notifyWebsiteVisit, notifyItineraryGeneration, notifyUserSignup } from '../services/discord.service.js';
+import { notifyWebsiteVisit } from '../services/discord.service.js';
 
 const router = express.Router();
 
@@ -12,39 +12,19 @@ router.post('/discord-test', async (req, res) => {
   try {
     console.log('Testing Discord notifications manually...');
     
-    // Test all notification types
-    const results = await Promise.allSettled([
-      notifyWebsiteVisit({
-        timestamp: new Date().toLocaleString(),
-        userAgent: 'Debug Test Bot',
-        ip: req.ip
-      }),
-      notifyUserSignup({
-        email: 'debug-test@example.com',
-        name: 'Debug Test User',
-        location: 'Test Location'
-      }),
-      notifyItineraryGeneration({
-        destination: 'Debug Test Destination',
-        startDate: '2024-09-01',
-        endDate: '2024-09-07',
-        travelers: '2',
-        budget: 'mid-range',
-        userEmail: 'debug-test@example.com',
-        from: 'Debug Start Location',
-        interests: ['Testing', 'Debug']
-      })
-    ]);
+    // Test visit notification only
+    const result = await notifyWebsiteVisit({
+      timestamp: new Date().toLocaleString(),
+      url: 'https://debug-test.example.com',
+      screen: '1920x1080',
+      timezone: 'America/New_York',
+      language: 'en-US'
+    });
 
     res.json({
       success: true,
-      message: 'Discord notification test completed',
-      results: results.map((result, index) => ({
-        type: ['Website Visit', 'User Signup', 'Itinerary Generation'][index],
-        status: result.status,
-        value: result.value,
-        reason: result.reason?.message
-      })),
+      message: 'Discord visit notification test completed',
+      result: result,
       timestamp: new Date().toISOString(),
       discordWebhookConfigured: !!process.env.DISCORD_WEBHOOK_URL
     });

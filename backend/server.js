@@ -10,7 +10,7 @@ import weatherRoutes from './routes/weather.js';
 import aiRoutes from './routes/ai.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
 import debugRoutes from './routes/debug.js';
-import { trackVisitor, trackAPIUsage } from './middleware/visitor.js';
+import visitRoutes from './routes/visit.js';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -45,10 +45,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Add visitor tracking middleware
-app.use(trackVisitor);
-app.use(trackAPIUsage);
-
 
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 30000, // Increase timeout for slow connections
@@ -68,6 +64,7 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/visit', visitRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 
