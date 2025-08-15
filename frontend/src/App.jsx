@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import Header from './components/Header'
@@ -47,18 +47,21 @@ const App = () => {
   useEffect(() => {
     // Ping backend to wake it up
     axios.get(`${API_BASE_URL}/auth/ping`).catch(() => {});
-    
-    // Send visit details to backend for Discord notification
-    fetch(`${API_BASE_URL}/visit/notify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: window.location.href,
-        screen: `${window.innerWidth}x${window.innerHeight}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        language: navigator.language
-      })
-    }).catch(err => console.error("Visit tracking failed:", err));
+    if (!sessionStorage.getItem('visit-notified')) {
+      // Send visit details to backend for Discord notification
+      fetch(`${API_BASE_URL}/visit/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: window.location.href,
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language
+        })
+      }).finally(() => {
+        sessionStorage.setItem('visit-notified', '1');
+      });
+    }
   }, []);
 
   return (
