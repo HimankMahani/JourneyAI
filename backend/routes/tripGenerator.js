@@ -315,6 +315,12 @@ router.post('/itinerary', auth, async (req, res) => {
 
     // Send Discord notification for itinerary generation
     try {
+      console.log('✈️ Trip generated, sending Discord notification...', {
+        destination,
+        userEmail: req.user?.email || req.userEmail,
+        timestamp: new Date().toISOString()
+      });
+      
       await notifyItineraryGeneration({
         destination,
         startDate,
@@ -325,8 +331,10 @@ router.post('/itinerary', auth, async (req, res) => {
         from: fromLocation,
         interests
       });
+      
+      console.log('✅ Discord itinerary notification sent successfully');
     } catch (discordError) {
-      console.error('Failed to send Discord notification:', discordError);
+      console.error('❌ Failed to send Discord notification:', discordError);
       // Don't fail the request if Discord notification fails
     }
 

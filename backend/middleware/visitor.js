@@ -33,6 +33,14 @@ export function trackVisitor(req, res, next) {
 
   // Only track GET requests to main pages
   if (req.method === 'GET' && req.path === '/') {
+    console.log('🌍 Website visitor detected:', {
+      path: req.path,
+      method: req.method,
+      userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
+      ip: req.ip || req.connection.remoteAddress,
+      timestamp: new Date().toISOString()
+    });
+
     try {
       // Get visitor information
       const visitorInfo = {

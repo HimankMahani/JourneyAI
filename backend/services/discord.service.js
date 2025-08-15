@@ -9,12 +9,19 @@ dotenv.config();
 async function sendDiscordEmbed(embed) {
   const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
+  console.log('🔍 Discord service called:', {
+    webhookConfigured: !!DISCORD_WEBHOOK_URL,
+    embedTitle: embed.title,
+    timestamp: new Date().toISOString()
+  });
+
   if (!DISCORD_WEBHOOK_URL) {
-    console.warn('Discord webhook URL not configured');
+    console.warn('❌ Discord webhook URL not configured');
     return false;
   }
 
   try {
+    console.log('📤 Sending Discord notification...');
     const response = await fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -25,14 +32,14 @@ async function sendDiscordEmbed(embed) {
     });
 
     if (response.ok) {
-      console.log('Discord notification sent successfully');
+      console.log('✅ Discord notification sent successfully');
       return true;
     } else {
-      console.error('Failed to send Discord notification:', response.status);
+      console.error('❌ Failed to send Discord notification:', response.status, response.statusText);
       return false;
     }
   } catch (error) {
-    console.error('Error sending Discord notification:', error);
+    console.error('❌ Error sending Discord notification:', error);
     return false;
   }
 }
