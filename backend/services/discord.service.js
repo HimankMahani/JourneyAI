@@ -34,6 +34,9 @@ async function sendDiscordEmbed(embed) {
     if (response.ok) {
       console.log('✅ Discord notification sent successfully');
       return true;
+    } else if (response.status === 429) {
+      console.warn('⚠️ Discord rate limit hit - this usually means too many rapid calls');
+      return false;
     } else {
       console.error('❌ Failed to send Discord notification:', response.status, response.statusText);
       return false;

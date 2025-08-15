@@ -1,14 +1,18 @@
 import { notifyWebsiteVisit } from '../services/discord.service.js';
 
+// Track recent visitors to avoid spam
+const recentVisitors = new Set();
+const VISITOR_COOLDOWN_MS = 300000; // 5 minutes cooldown per IP
+
 /**
  * Middleware to track website visits and send Discord notifications
- * Only tracks the first visit per session to avoid spam
+ * Only tracks unique visitors with cooldown to avoid rate limiting
  */
 export function trackVisitor(req, res, next) {
-  // Skip tracking for certain routes to avoid spam
+  // Skip tracking for ALL API routes and static files
   const skipRoutes = [
+    '/api/',      // Skip ALL API routes
     '/favicon.ico',
-    '/api/',
     '/health',
     '/ping',
     '.css',
@@ -31,32 +35,57 @@ export function trackVisitor(req, res, next) {
     return next();
   }
 
-  // Only track GET requests to main pages
+  // Only track GET requests to main pages (NOT API calls)
   if (req.method === 'GET' && req.path === '/') {
-    console.log('🌍 Website visitor detected:', {
-      path: req.path,
-      method: req.method,
-      userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
-      ip: req.ip || req.connection.remoteAddress,
-      timestamp: new Date().toISOString()
-    });
+    const visitorIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const visitorKey = `${visitorIP}-${Date.now()}`;
+    
+    // Check if this IP has visited recently
+    const hasRecentVisit = Array.from(recentVisitors).some(key => 
+      key.startsWith(visitorIP) && 
+      (Date.now() - parseInt(key.split('-')[1])) < VISITOR_COOLDOWN_MS
+    );
 
-    try {
-      // Get visitor information
-      const visitorInfo = {
-        userAgent: req.get('User-Agent'),
-        ip: req.ip || req.connection.remoteAddress,
-        timestamp: new Date().toLocaleString(),
+    if (!hasRecentVisit) {
+      console.log('🌍 New unique website visitor detected (homepage only):', {
         path: req.path,
-        referer: req.get('Referer')
-      };
-
-      // Send notification asynchronously (don't wait for it)
-      notifyWebsiteVisit(visitorInfo).catch(error => {
-        console.error('Error sending visit notification:', error);
+        method: req.method,
+        userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
+        ip: visitorIP,
+        timestamp: new Date().toISOString()
       });
-    } catch (error) {
-      console.error('Error in visitor tracking middleware:', error);
+
+      // Add to recent visitors
+      recentVisitors.add(visitorKey);
+      
+      // Clean up old entries
+      const now = Date.now();
+      recentVisitors.forEach(key => {
+        const timestamp = parseInt(key.split('-')[1]);
+        if (now - timestamp > VISITOR_COOLDOWN_MS) {
+          recentVisitors.delete(key);
+        }
+      });
+
+      try {
+        // Get visitor information
+        const visitorInfo = {
+          userAgent: req.get('User-Agent'),
+          ip: visitorIP,
+          timestamp: new Date().toLocaleString(),
+          path: req.path,
+          referer: req.get('Referer')
+        };
+
+        // Send notification asynchronously (don't wait for it)
+        notifyWebsiteVisit(visitorInfo).catch(error => {
+          console.error('Error sending visit notification:', error);
+        });
+      } catch (error) {
+        console.error('Error in visitor tracking middleware:', error);
+      }
+    } else {
+      console.log('🔇 Visitor from', visitorIP, 'recently tracked, skipping notification');
     }
   }
 
@@ -67,7 +96,7 @@ export function trackVisitor(req, res, next) {
  * Simple middleware to track API endpoint usage
  */
 export function trackAPIUsage(req, res, next) {
-  // Track important API endpoints
+  // Only log important API endpoints, don't send Discord notifications
   const importantEndpoints = [
     '/api/generator/itinerary',
     '/api/auth/register',
@@ -75,7 +104,7 @@ export function trackAPIUsage(req, res, next) {
   ];
 
   if (importantEndpoints.includes(req.path)) {
-    console.log(`API Usage: ${req.method} ${req.path} from ${req.ip || 'unknown'}`);
+    console.log(`📡 API Usage: ${req.method} ${req.path} from ${req.ip || 'unknown'}`);
   }
 
   next();
