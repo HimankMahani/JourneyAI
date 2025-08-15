@@ -9,6 +9,7 @@ import tripRoutes from './routes/trips.js';
 import weatherRoutes from './routes/weather.js';
 import aiRoutes from './routes/ai.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
+import debugRoutes from './routes/debug.js';
 import { trackVisitor, trackAPIUsage } from './middleware/visitor.js';
 
 const app = express();
@@ -66,6 +67,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
+app.use('/api/debug', debugRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 
