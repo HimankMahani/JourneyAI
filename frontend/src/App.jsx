@@ -28,14 +28,6 @@ const Layout = ({ children }) => (
   </div>
 );
 
-// Create a simple component for "coming soon" pages
-const ComingSoon = ({ title }) => (
-  <div className="p-8 text-center">
-    <h2 className="text-2xl font-bold text-gray-800 mb-4">{title} - Coming Soon</h2>
-    <p className="text-gray-600">We're working hard to bring you this feature!</p>
-  </div>
-);
-
 const HomePage = () => (
   <>
     <Hero />
@@ -46,8 +38,12 @@ const HomePage = () => (
 const App = () => {
   useEffect(() => {
     // Ping backend to wake it up
-    axios.get(`${API_BASE_URL}/auth/ping`).catch(() => {});
+    axios.post(`${API_BASE_URL}/auth/ping`).catch(() => {});
+    
+    // For testing, you can comment out the sessionStorage check temporarily
     if (!sessionStorage.getItem('visit-notified')) {
+      console.log('🌍 Sending visit notification to:', `${API_BASE_URL}/visit/notify`);
+      
       // Send visit details to backend for Discord notification
       fetch(`${API_BASE_URL}/visit/notify`, {
         method: 'POST',
@@ -58,9 +54,17 @@ const App = () => {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           language: navigator.language
         })
-      }).finally(() => {
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('✅ Visit notification response:', data);
         sessionStorage.setItem('visit-notified', '1');
+      })
+      .catch(error => {
+        console.error('❌ Visit notification failed:', error);
       });
+    } else {
+      console.log('ℹ️ Visit already notified this session');
     }
   }, []);
 
