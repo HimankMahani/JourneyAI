@@ -113,3 +113,4 @@ npm-debug.log*
 .stylelintcache
 .vercel
 .netlify
+.project_docs
