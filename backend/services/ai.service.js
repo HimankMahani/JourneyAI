@@ -230,26 +230,3 @@ export const generateLocalTips = async (destination) => {
   
   return generateContent(prompt, { temperature: 0.6 });
 };
-
-/**
- * Generate activity recommendations
- * @param {string} destination - The destination
- * @param {Array} interests - Array of user interests
- * @param {string} weatherCondition - Current weather (optional)
- * @returns {Promise<string>} - The generated recommendations
- */
-export const generateActivityRecommendations = async (destination, interests = [], weatherCondition = null) => {
-  let prompt = `Recommend 5 interesting activities for a traveler visiting ${destination}.`;
-  
-  if (interests && interests.length > 0) {
-    prompt += ` The traveler is interested in ${interests.join(', ')}.`;
-  }
-  
-  if (weatherCondition) {
-    prompt += ` The current weather is ${weatherCondition}.`;
-  }
-  
-  prompt += ` For each activity, include a name, brief description, estimated time required, and best time of day to visit.`;
-  
-  return generateContent(prompt, { temperature: 0.7 });
-};
