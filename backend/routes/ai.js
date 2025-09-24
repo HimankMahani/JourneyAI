@@ -43,8 +43,10 @@ router.post('/estimate-enhanced-trip-costs', async (req, res) => {
         itineraryText += `Day ${idx + 1}:\n`;
         day.activities?.forEach(activity => {
           const title = activity.activity || activity.title || 'Activity';
-          const type = activity.type || '';
-          itineraryText += `- ${title} (${type})\n`;
+          const type = activity.type || activity.category || '';
+          itineraryText += type
+            ? `- ${title} (${type})\n`
+            : `- ${title}\n`;
         });
         itineraryText += '\n';
       });

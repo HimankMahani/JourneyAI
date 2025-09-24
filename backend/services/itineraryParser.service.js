@@ -419,9 +419,11 @@ export const validateItinerary = (itinerary) => {
         if (!activity.activity && !activity.title) {
           errors.push(`Day ${dayIndex + 1}, Activity ${activityIndex + 1}: Missing activity title`);
         }
-        
-        if (!activity.type) {
-          errors.push(`Day ${dayIndex + 1}, Activity ${activityIndex + 1}: Missing type`);
+
+        // Accept either `type` or `category` (our normalized structure uses `category`)
+        const typeOrCategory = activity.type ?? activity.category;
+        if (!typeOrCategory) {
+          errors.push(`Day ${dayIndex + 1}, Activity ${activityIndex + 1}: Missing type/category`);
         }
         
         if (!activity.time) {
