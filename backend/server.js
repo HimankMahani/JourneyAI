@@ -16,8 +16,6 @@ const app = express();
 const PORT = process.env.PORT || 5050;
 
 // CORS: allow Vercel frontend (via env) and localhost for dev
-import cors from 'cors';
-
 const allowedOrigins = [
   process.env.VERCEL_FRONTEND_URL,
   'http://localhost:5173'
