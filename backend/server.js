@@ -15,24 +15,33 @@ import visitRoutes from './routes/visit.js';
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-// CORS: allow Vercel frontend (via env) and localhost for dev
+// CORS: allow Vercel frontend and localhost for dev
 const allowedOrigins = [
+  // Prefer env-configured URL in production
   process.env.VERCEL_FRONTEND_URL,
+  // Explicit beta URL to avoid env misconfig
+  'https://journey-ai-beta.vercel.app',
+  // Local dev (Vite default)
   'http://localhost:5173'
 ].filter(Boolean);
 
 const corsOptions = {
-  origin: (origin, callback) => {
+  origin(origin, callback) {
+    // allow non-browser requests (no Origin) and whitelisted origins
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+    return callback(new Error('Not allowed by CORS'));
   },
-  credentials: false
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+  credentials: false // set true only if using cookie-based auth
 };
 
 app.use(cors(corsOptions));
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

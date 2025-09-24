@@ -120,4 +120,8 @@ router.get('/ping', (req, res) => {
   res.json({ status: 'ok', message: 'Backend awake' });
 });
 
+router.post('/ping', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend awake (POST)' });
+});
+
 export default router;
