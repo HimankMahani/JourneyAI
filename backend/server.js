@@ -15,8 +15,26 @@ import visitRoutes from './routes/visit.js';
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-// Enable CORS for all routes
-app.use(cors());
+// CORS: allow Vercel frontend (via env) and localhost for dev
+import cors from 'cors';
+
+const allowedOrigins = [
+  process.env.VERCEL_FRONTEND_URL,
+  'http://localhost:5173'
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: false
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
