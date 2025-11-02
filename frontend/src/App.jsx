@@ -39,33 +39,6 @@ const App = () => {
   useEffect(() => {
     // Ping backend to wake it up
     axios.post(`${API_BASE_URL}/auth/ping`).catch(() => {});
-    
-    // For testing, you can comment out the sessionStorage check temporarily
-    if (!sessionStorage.getItem('visit-notified')) {
-      console.log('🌍 Sending visit notification to:', `${API_BASE_URL}/visit/notify`);
-      
-      // Send visit details to backend for Discord notification
-      fetch(`${API_BASE_URL}/visit/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: window.location.href,
-          screen: `${window.innerWidth}x${window.innerHeight}`,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          language: navigator.language
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log('✅ Visit notification response:', data);
-        sessionStorage.setItem('visit-notified', '1');
-      })
-      .catch(error => {
-        console.error('❌ Visit notification failed:', error);
-      });
-    } else {
-      console.log('ℹ️ Visit already notified this session');
-    }
   }, []);
 
   return (

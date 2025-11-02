@@ -9,7 +9,6 @@ import tripRoutes from './routes/trips.js';
 import weatherRoutes from './routes/weather.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
 import debugRoutes from './routes/debug.js';
-import visitRoutes from './routes/visit.js';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -62,7 +61,6 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 app.use('/api/debug', debugRoutes);
-app.use('/api/visit', visitRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 
