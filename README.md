@@ -143,7 +143,7 @@ npm start
 - **Authentication**: JWT with bcryptjs password hashing
 - **AI Integration**: Google Gemini AI for content generation
 - **Weather Service**: OpenWeather API for real-time data
-- **HTTP Client**: Axios & node-fetch for external API calls
+- **HTTP Client**: Axios for external API calls
 - **Development**: Nodemon for hot reload
 
 ### Frontend Technologies

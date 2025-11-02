@@ -500,7 +500,7 @@ Updates         (axios)      (Mongoose)    (Real-time)
 - **JWT**: Token-based authentication
 - **bcryptjs**: Password hashing
 - **@google/generative-ai**: Google Gemini AI integration
-- **axios & node-fetch**: HTTP client libraries
+- **axios**: HTTP client library
 
 ### External Integrations
 - **Google Gemini AI**: Advanced AI for travel recommendations

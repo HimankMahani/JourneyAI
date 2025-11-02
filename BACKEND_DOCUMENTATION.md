@@ -12,7 +12,7 @@ JourneyAI Backend is a RESTful API server built with Node.js and Express.js that
 - **ODM**: Mongoose
 - **Authentication**: JWT (JSON Web Tokens)
 - **Password Hashing**: bcryptjs
-- **HTTP Client**: axios, node-fetch
+- **HTTP Client**: axios
 - **Environment Management**: dotenv
 - **Development**: nodemon
 

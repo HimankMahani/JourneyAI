@@ -4095,5 +4095,4 @@ export const preGeneratedItineraries = {
     ]
   }
 
-  // Add more destinations as needed...
 };
