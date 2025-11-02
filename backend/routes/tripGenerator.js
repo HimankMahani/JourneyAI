@@ -22,6 +22,36 @@ import {
   getDestinationImage
 } from '../services/places.service.js';
 
+// Utility to total up itinerary activity costs after parsing AI output
+const calculateItineraryTotalCost = (itinerary = []) => {
+  return itinerary.reduce((dayTotal, day) => {
+    const activities = Array.isArray(day.activities) ? day.activities : [];
+    const activitySum = activities.reduce((activityTotal, activity) => {
+      const numericCost = Number(activity?.cost) || 0;
+      return activityTotal + numericCost;
+    }, 0);
+    return dayTotal + activitySum;
+  }, 0);
+};
+
+const applyItineraryCostToBudget = (tripDoc, itinerary = []) => {
+  const itineraryTotal = calculateItineraryTotalCost(itinerary);
+  if (itineraryTotal <= 0) {
+    return;
+  }
+
+  if (!tripDoc.budget) {
+    tripDoc.budget = {
+      amount: itineraryTotal,
+      currency: 'INR'
+    };
+    return;
+  }
+
+  tripDoc.budget.amount = itineraryTotal;
+  tripDoc.budget.currency = tripDoc.budget.currency || 'INR';
+};
+
 // Ensure environment variables are loaded
 dotenv.config();
 
@@ -209,8 +239,6 @@ router.post('/itinerary', auth, async (req, res) => {
     // Step 3: Create a new trip with the generated itinerary
     const tripTitle = title || `Trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`;
     
-    const budgetAmount = getBudgetAmount(budget, destination, startDate, endDate, travelers);
-    
     const newTrip = new Trip({
       title: tripTitle,
       description: `AI-generated itinerary for a trip from ${fromLocation ? (fromLocation.full || fromLocation.city || fromLocation) : 'Unknown'} to ${destination}`,
@@ -221,7 +249,7 @@ router.post('/itinerary', auth, async (req, res) => {
       destination: { name: destination },
       from: fromLocation,
       budget: { 
-        amount: budgetAmount,
+        amount: getBudgetAmount(budget, destination, startDate, endDate, travelers),
         currency: 'INR'
       },
       travelers: parseTravelersCount(travelers), // Parse travelers properly
@@ -299,6 +327,8 @@ router.post('/itinerary', auth, async (req, res) => {
             const normalizedItinerary = normalizeItinerary(parsedItinerary, startDate);
             savedTrip.itinerary = normalizedItinerary;
           }
+
+          applyItineraryCostToBudget(savedTrip, savedTrip.itinerary);
         } else {
         }
       } else {
@@ -429,6 +459,8 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
             const normalizedItinerary = normalizeItinerary(parsedItinerary, trip.startDate);
             trip.itinerary = normalizedItinerary;
           }
+
+          applyItineraryCostToBudget(trip, trip.itinerary);
         } else {
         }
       } else {
@@ -504,6 +536,8 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
           const normalizedItinerary = normalizeItinerary(parsedItinerary, trip.startDate);
           trip.itinerary = normalizedItinerary;
         }
+
+        applyItineraryCostToBudget(trip, trip.itinerary);
         
         // Save the updated trip
         const updatedTrip = await trip.save();

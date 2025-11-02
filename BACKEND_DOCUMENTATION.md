@@ -279,37 +279,6 @@ JourneyAI Backend is a RESTful API server built with Node.js and Express.js that
 }
 ```
 
-### AI Routes (`/api/ai`)
-
-#### POST `/api/ai/estimate-enhanced-trip-costs`
-**Description**: Get AI-generated trip cost estimates
-**Body**:
-```json
-{
-  "fromLocation": "Mumbai, India",
-  "toDestination": "Paris, France",
-  "days": 7,
-  "travelers": 2,
-  "itinerary": [...] // Optional detailed itinerary
-}
-```
-**Response**:
-```json
-{
-  "totalEstimate": 250000,
-  "breakdown": {
-    "flights": 120000,
-    "accommodation": 70000,
-    "food": 30000,
-    "localTransport": 15000,
-    "activities": 10000,
-    "shopping": 3000,
-    "misc": 2000
-  },
-  "currency": "INR"
-}
-```
-
 ### Trip Generator Routes (`/api/generator`)
 **Description**: AI-powered trip generation endpoints
 

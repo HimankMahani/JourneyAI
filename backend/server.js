@@ -7,7 +7,6 @@ import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
 import weatherRoutes from './routes/weather.js';
-import aiRoutes from './routes/ai.js';
 import tripGeneratorRoutes from './routes/tripGenerator.js';
 import debugRoutes from './routes/debug.js';
 import visitRoutes from './routes/visit.js';
@@ -61,7 +60,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/weather', weatherRoutes);
-app.use('/api/ai', aiRoutes);
 app.use('/api/generator', tripGeneratorRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/visit', visitRoutes);
