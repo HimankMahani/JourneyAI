@@ -24,7 +24,9 @@ const OutlineCalendarIcon = () => (
 
 const ItineraryTab = ({ 
   itinerary,
-  onChangeRequest
+  onChangeRequest,
+  onToggleFavorite,
+  onNotesChange
 }) => {
   // Handle null or empty itinerary
   if (!itinerary || !Array.isArray(itinerary) || itinerary.length === 0) {
@@ -41,16 +43,30 @@ const ItineraryTab = ({
     );
   }
 
-  const handleActivityChange = (day, index, changeType) => {
+  const buildChangeRequestHandler = (dayIndex, activityIndex) => (changeType) => {
     if (onChangeRequest) {
-      onChangeRequest(day, index, changeType);
+      onChangeRequest(dayIndex, activityIndex, changeType);
     }
+  };
+
+  const buildFavoriteHandler = (dayIndex, activityIndex) => (isFavorited) => {
+    if (onToggleFavorite) {
+      return onToggleFavorite(dayIndex, activityIndex, isFavorited);
+    }
+    return true;
+  };
+
+  const buildNotesHandler = (dayIndex, activityIndex) => (note) => {
+    if (onNotesChange) {
+      return onNotesChange(dayIndex, activityIndex, note);
+    }
+    return true;
   };
 
   return (
     <div className="space-y-8">
-      {itinerary.map((day) => (
-        <div key={day.day} className="transform transition-all duration-300 hover:translate-y-[-4px]">
+      {itinerary.map((day, dayIndex) => (
+        <div key={day.day ?? dayIndex} className="transform transition-all duration-300 hover:translate-y-[-4px]">
           <Card className="overflow-hidden border-none shadow-lg">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6">
               <CardTitle className="text-white flex items-center justify-between">
@@ -77,14 +93,14 @@ const ItineraryTab = ({
             <CardContent className="p-6 md:p-8 space-y-6 bg-gradient-to-b from-blue-50/50 to-white">
               {day.activities && Array.isArray(day.activities) && day.activities.map((activity, index) => (
                 <div 
-                  key={`${day.day}-${index}`}
+                  key={`${dayIndex}-${index}`}
                   className={index < day.activities.length - 1 ? "pb-6 border-b border-gray-100" : ""}
                 >
                   <ActivityCard
                     activity={activity}
-                    index={index}
-                    day={day.day}
-                    onChangeRequest={onChangeRequest ? handleActivityChange : undefined}
+                    onChangeRequest={onChangeRequest ? buildChangeRequestHandler(dayIndex, index) : undefined}
+                    onToggleFavorite={onToggleFavorite ? buildFavoriteHandler(dayIndex, index) : undefined}
+                    onNotesChange={onNotesChange ? buildNotesHandler(dayIndex, index) : undefined}
                   />
                 </div>
               ))}

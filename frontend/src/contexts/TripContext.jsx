@@ -168,6 +168,30 @@ export const TripProvider = ({ children }) => {
     }
   }, [currentTrip]);
 
+  const updateItineraryActivity = useCallback(async (tripId, dayIndex, activityIndex, updates) => {
+    try {
+      const response = await tripService.updateItineraryActivity(tripId, {
+        dayIndex,
+        activityIndex,
+        updates
+      });
+
+      const updatedTrip = response.trip || response.data || response;
+
+      if (updatedTrip) {
+        setTrips(prev => prev.map(trip => (trip._id === updatedTrip._id ? updatedTrip : trip)));
+        if (currentTrip?._id === updatedTrip._id) {
+          setCurrentTrip(updatedTrip);
+        }
+      }
+
+      return { success: true, trip: updatedTrip };
+    } catch (err) {
+      console.error('Error updating itinerary activity:', err);
+      return { success: false, error: err.message || 'Failed to update activity' };
+    }
+  }, [currentTrip]);
+
   const getStorageStats = useCallback(async () => {
     try {
       const response = await tripService.getStorageStats();
@@ -294,7 +318,8 @@ export const TripProvider = ({ children }) => {
     reparseItinerary,
     getStorageStats,
     getAIResponses,
-    createTripFromDestination
+    createTripFromDestination,
+    updateItineraryActivity
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

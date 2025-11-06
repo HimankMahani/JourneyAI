@@ -53,7 +53,16 @@ const tripSchema = new mongoose.Schema({
       cost: Number,
       category: String,
       startTime: String,
-      endTime: String
+      endTime: String,
+      isFavorited: {
+        type: Boolean,
+        default: false
+      },
+      notes: {
+        type: String,
+        trim: true,
+        default: ''
+      }
     }]
   }],
   accommodation: [{

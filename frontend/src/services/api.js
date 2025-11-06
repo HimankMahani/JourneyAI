@@ -145,6 +145,19 @@ export const tripService = {
     }
   },
 
+  updateItineraryActivity: async (tripId, { dayIndex, activityIndex, updates }) => {
+    try {
+      const response = await api.patch(`/trips/${tripId}/itinerary/activity`, {
+        dayIndex,
+        activityIndex,
+        updates
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
   // File-based operations
   reparseItinerary: async (tripId) => {
     try {

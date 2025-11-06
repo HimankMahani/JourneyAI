@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -7,17 +7,36 @@ import {
 
 const ActivityCard = ({ 
   activity = {}, 
-  index, 
-  day, 
-  onChangeRequest
+  onChangeRequest,
+  onToggleFavorite,
+  onNotesChange
 }) => {
   const [isFavorited, setIsFavorited] = useState(activity?.isFavorited || false);
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(activity?.notes || '');
 
-  const toggleFavorite = () => {
-    setIsFavorited(!isFavorited);
-    // Here you could also call an API to save the favorite status
+  useEffect(() => {
+    setIsFavorited(activity?.isFavorited || false);
+  }, [activity?.isFavorited]);
+
+  useEffect(() => {
+    setNotes(activity?.notes || '');
+  }, [activity?.notes]);
+
+  const toggleFavorite = async () => {
+    const updatedValue = !isFavorited;
+    setIsFavorited(updatedValue);
+
+    if (onToggleFavorite) {
+      try {
+        const result = await onToggleFavorite(updatedValue);
+        if (result === false) {
+          setIsFavorited(!updatedValue);
+        }
+      } catch {
+        setIsFavorited(!updatedValue);
+      }
+    }
   };
 
   const toggleNotes = () => {
@@ -26,7 +45,19 @@ const ActivityCard = ({
 
   const handleNotesChange = (e) => {
     setNotes(e.target.value);
-    // Here you could debounce and save notes to API
+  };
+
+  const handleNotesBlur = async () => {
+    if (onNotesChange) {
+      try {
+        const result = await onNotesChange(notes);
+        if (result === false) {
+          setNotes(activity?.notes || '');
+        }
+      } catch {
+        setNotes(activity?.notes || '');
+      }
+    }
   };
   const getActivityIcon = (type) => {
     switch (type) {
@@ -96,7 +127,7 @@ const ActivityCard = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onChangeRequest(day, index, 'time')}
+                onClick={() => onChangeRequest('time')}
                 className="flex items-center space-x-2 hover:bg-gray-50"
               >
                 <span>Change Time</span>
@@ -131,13 +162,14 @@ const ActivityCard = ({
               <textarea
                 value={notes}
                 onChange={handleNotesChange}
+                onBlur={handleNotesBlur}
                 placeholder="Add your notes about this activity..."
                 className="w-full p-3 border border-yellow-300 rounded-lg resize-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 rows={3}
               />
               {notes && (
                 <p className="text-xs text-gray-500 mt-2">
-                  Notes are saved automatically
+                  Notes save when you close this editor
                 </p>
               )}
             </div>

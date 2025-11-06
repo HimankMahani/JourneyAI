@@ -38,7 +38,11 @@ const normalizeItinerary = (itinerary) => {
       time: activity.time || activity.startTime || '09:00',
       duration: activity.duration || '1 hour',
       cost: activity.cost || 0, // Keep as number for TripHeader to handle
-      location: activity.location || { name: activity.location || 'TBD' }
+      location: activity.location || { name: activity.location || 'TBD' },
+      isFavorited: typeof activity.isFavorited === 'boolean'
+        ? activity.isFavorited
+        : (typeof activity.isFavorite === 'boolean' ? activity.isFavorite : false),
+      notes: activity.notes || ''
     }))
   }));
 };
@@ -123,15 +127,11 @@ const getPreGeneratedItinerary = (destinationName) => {
 
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
-  const { currentTrip, fetchTripById, regenerateTripItinerary } = useTrip();
+  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity } = useTrip();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [checkedItems, setCheckedItems] = useState({});
-  const [favoriteActivities, setFavoriteActivities] = useState({});
-  const [notes, setNotes] = useState({});
-  const [showNoteForm, setShowNoteForm] = useState({});
-  const [showSuggestions, setShowSuggestions] = useState({});
   const [isRegenerating, setIsRegenerating] = useState(false);
   
   const [trip, setTrip] = useState(null);
@@ -262,21 +262,68 @@ const Planning = () => {
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const toggleFavoriteActivity = (day, index) => {
-    const key = `day-${day}-activity-${index}`;
-    setFavoriteActivities(prev => ({ ...prev, [key]: !prev[key] }));
+  const applyItineraryChanges = (dayIndex, activityIndex, changes) => {
+    setItinerary(prevItinerary => {
+      if (!prevItinerary) return prevItinerary;
+
+      const updatedItinerary = prevItinerary.map((day, idx) => {
+        if (idx !== dayIndex) return day;
+
+        const updatedActivities = (day.activities || []).map((activity, actIdx) => (
+          actIdx === activityIndex ? { ...activity, ...changes } : activity
+        ));
+
+        return {
+          ...day,
+          activities: updatedActivities
+        };
+      });
+
+      setTrip(prevTrip => (prevTrip ? { ...prevTrip, itinerary: updatedItinerary } : prevTrip));
+      return updatedItinerary;
+    });
   };
 
-  const addNote = (day, activityIndex, note) => {
-    const key = `day-${day}-activity-${activityIndex}`;
-    setNotes(prev => ({ ...prev, [key]: note }));
-    setShowNoteForm(prev => ({ ...prev, [key]: false }));
+  const handleToggleFavoriteActivity = async (dayIndex, activityIndex, isFavorited) => {
+    const previousValue = itinerary?.[dayIndex]?.activities?.[activityIndex]?.isFavorited || false;
+    applyItineraryChanges(dayIndex, activityIndex, { isFavorited });
+
+    if (!currentTrip?._id) {
+      return true;
+    }
+
+    const response = await updateItineraryActivity(currentTrip._id, dayIndex, activityIndex, { isFavorited });
+
+    if (response.success && response.trip) {
+      setTrip(normalizeTrip(response.trip));
+      setItinerary(normalizeItinerary(response.trip.itinerary));
+      return true;
+    }
+
+    applyItineraryChanges(dayIndex, activityIndex, { isFavorited: previousValue });
+    toast.error(response.error || 'Failed to update favorite');
+    return false;
   };
 
-  const handleChangeRequest = (day, activityIndex) => {
-    // This would typically call an API to get alternative suggestions
-    const key = `day-${day}-activity-${activityIndex}`;
-    setShowSuggestions(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleNotesChange = async (dayIndex, activityIndex, note) => {
+    const previousValue = itinerary?.[dayIndex]?.activities?.[activityIndex]?.notes || '';
+    applyItineraryChanges(dayIndex, activityIndex, { notes: note });
+
+    if (!currentTrip?._id) {
+      return true;
+    }
+
+    const response = await updateItineraryActivity(currentTrip._id, dayIndex, activityIndex, { notes: note });
+
+    if (response.success && response.trip) {
+      setTrip(normalizeTrip(response.trip));
+      setItinerary(normalizeItinerary(response.trip.itinerary));
+      return true;
+    }
+
+    applyItineraryChanges(dayIndex, activityIndex, { notes: previousValue });
+    toast.error(response.error || 'Failed to save note');
+    return false;
   };
 
   const handleRegenerateItinerary = async () => {
@@ -288,15 +335,16 @@ const Planning = () => {
     setIsRegenerating(true);
     
     try {
-      // Get interests from notes or favorites, if any
-      const interests = Object.values(notes)
-        .filter(note => note && typeof note === 'string')
-        .map(note => {
-          // Extract keywords from notes
-          const words = note.toLowerCase().split(/\s+/);
-          return words.filter(word => word.length > 3);
-        })
-        .flat();
+      // Gather interests from any notes the user has added
+      const interests = [];
+      (itinerary || []).forEach(day => {
+        (day.activities || []).forEach(activity => {
+          if (activity?.notes) {
+            const words = activity.notes.toLowerCase().split(/\s+/);
+            interests.push(...words.filter(word => word.length > 3));
+          }
+        });
+      });
       
       // Call the regenerate function with the trip ID and optional preferences
       const result = await regenerateTripItinerary(currentTrip._id, { 
@@ -371,17 +419,8 @@ const Planning = () => {
           {activeTab === 'itinerary' && (
             <ItineraryTab 
               itinerary={itinerary}
-              toggleFavoriteActivity={toggleFavoriteActivity}
-              favoriteActivities={favoriteActivities}
-              notes={notes}
-              showNoteForm={showNoteForm}
-              setShowNoteForm={setShowNoteForm}
-              addNote={addNote}
-              handleChangeRequest={handleChangeRequest}
-              showSuggestions={showSuggestions}
-              setShowSuggestions={setShowSuggestions}
-              onRegenerateItinerary={handleRegenerateItinerary}
-              isRegenerating={isRegenerating}
+              onToggleFavorite={handleToggleFavoriteActivity}
+              onNotesChange={handleNotesChange}
             />
           )}
 
