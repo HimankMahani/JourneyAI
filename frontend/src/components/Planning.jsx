@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTrip } from '@/contexts/useTrip';
 
@@ -139,6 +139,7 @@ const Planning = () => {
   const [packingList, setPackingList] = useState(null);
   const [destinationInfo, setDestinationInfo] = useState(null);
   const [weather, setWeather] = useState(null);
+  const previousItineraryRef = useRef(null);
 
   // Clear local state when tripId changes to prevent showing stale data
   useEffect(() => {
@@ -261,6 +262,18 @@ const Planning = () => {
     const key = `${category}-${index}`;
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  useEffect(() => {
+    const itineraryChanged = itinerary && previousItineraryRef.current !== itinerary;
+
+    if (!isRegenerating && !isLoading && itineraryChanged) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (itineraryChanged) {
+      previousItineraryRef.current = itinerary;
+    }
+  }, [itinerary, isRegenerating, isLoading]);
 
   const applyItineraryChanges = (dayIndex, activityIndex, changes) => {
     setItinerary(prevItinerary => {
