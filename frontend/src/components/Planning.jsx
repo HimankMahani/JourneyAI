@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useTrip } from '@/contexts/useTrip';
+import { useTripContext } from '@/contexts/useTripContext';
 
 // Import individual components directly
 import TripHeader from '@/components/planning/TripHeader';
@@ -127,7 +127,7 @@ const getPreGeneratedItinerary = (destinationName) => {
 
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
-  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity } = useTrip();
+  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity } = useTripContext();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
