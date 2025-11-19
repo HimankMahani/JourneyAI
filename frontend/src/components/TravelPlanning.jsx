@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, MapPin, Sparkles, Zap, Star } from "lucide-react";
 import { TripGenerationLoader } from "./ui/PlanningPageSkeleton";
-import { useTrip } from "@/contexts/useTrip";
+import { useTripContext } from "@/contexts/useTripContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/useAuth";
 
 const TravelPlanning = () => {
-  const { generateAIItinerary } = useTrip();
+  const { generateAIItinerary } = useTripContext();
   const { user } = useAuth();
   const navigate = useNavigate();
 
