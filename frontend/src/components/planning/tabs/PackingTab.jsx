@@ -1,98 +1,146 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CheckCircle2, Circle, Backpack } from 'lucide-react';
+import { CheckCircle2, Circle, Backpack, Plus, X } from 'lucide-react';
 
-const PackingTab = ({ packingList = {}, checkedItems = {}, togglePackingItem = () => {} }) => {
-  const renderPackingList = () => {
-    // Ensure packingList is an object
-    const safePackingList = packingList || {};
-    
-    if (Object.keys(safePackingList).length === 0) {
-      return (
-        <div className="text-center py-12">
-          <Backpack className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">No packing list available</h3>
-          <p className="mt-1 text-sm text-gray-500">Your packing list will appear here once generated.</p>
-        </div>
-      );
-    }
+// Basic defaults only
+const DEFAULT_ITEMS = [
+  'Passport / ID',
+  'Tickets / Boarding pass',
+  'Wallet & Cash',
+  'Phone & Charger',
+  'Medications',
+  'Toothbrush & Toiletries'
+];
 
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {Object.entries(safePackingList).map(([category, items]) => {
-            if (!Array.isArray(items) || !items.length) {
-              return null; // Skip if items is not an array or is empty
-            }
+// Normalize any incoming packing list into a flat array of { name, packed }
+const normalizeToFlatList = (packingList) => {
+  if (!packingList) return [];
 
-            const checkedCount = items.filter((item, i) => {
-              if (typeof item === 'object' && item !== null) {
-                return item.packed;
-              }
-              return checkedItems[`${category}-${i}`];
-            }).length;
-            
-            const progress = items.length > 0 ? Math.round((checkedCount / items.length) * 100) : 0;
-            
-            return (
-              <Card key={category} className="border-0 shadow-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 capitalize">
-                      <div className="bg-white/20 p-3 rounded-xl">
-                        <Backpack className="h-6 w-6" />
-                      </div>
-                      <span className="text-2xl font-bold">{category}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">{checkedCount}/{items.length}</div>
-                      <div className="w-20 bg-white/20 rounded-full h-3 mt-2">
-                        <div 
-                          className="bg-white h-3 rounded-full transition-all duration-500"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-3">
-                    {items.map((item, itemIndex) => {
-                      const itemName = (typeof item === 'object' && item !== null) ? item.name || item.item : String(item || '');
-                      const isChecked = typeof item === 'object' ? item.packed : checkedItems[`${category}-${itemIndex}`];
-                      
-                      return (
-                        <div 
-                          key={itemIndex} 
-                          className={`flex items-center space-x-4 p-4 rounded-xl cursor-pointer transition-all ${
-                            isChecked 
-                              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-md' 
-                              : 'hover:bg-gray-50 border-2 border-transparent hover:border-gray-200'
-                          }`}
-                          onClick={() => togglePackingItem(category, itemIndex)}
-                        >
-                          {isChecked ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-600" />
-                          ) : (
-                            <Circle className="h-6 w-6 text-gray-400" />
-                          )}
-                          <span className={`flex-1 font-medium ${isChecked ? 'text-green-800 line-through' : 'text-gray-700'}`}>
-                            {itemName}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
+  // If already flat array
+  if (Array.isArray(packingList)) {
+    return packingList.map((item) =>
+      typeof item === 'string' ? { name: item, packed: false } : { name: item?.name || item?.item || String(item), packed: !!item?.packed }
     );
+  }
+
+  // If object of categories, prefer essentials, else flatten first category
+  if (typeof packingList === 'object') {
+    const categories = Object.keys(packingList);
+    if (categories.length === 0) return [];
+
+    const preferred =
+      packingList.essentials && Array.isArray(packingList.essentials)
+        ? packingList.essentials
+        : packingList[categories[0]];
+
+    if (!Array.isArray(preferred)) return [];
+
+    return preferred.map((item) =>
+      typeof item === 'string' ? { name: item, packed: false } : { name: item?.name || item?.item || String(item), packed: !!item?.packed }
+    );
+  }
+
+  return [];
+};
+
+const PackingTab = ({ packingList = {} }) => {
+  const initialItems = useMemo(() => {
+    const normalized = normalizeToFlatList(packingList);
+    return normalized.length > 0 ? normalized : DEFAULT_ITEMS.map((n) => ({ name: n, packed: false }));
+  }, [packingList]);
+
+  const [items, setItems] = useState(initialItems);
+  const [newItem, setNewItem] = useState('');
+
+  // Ensure we refresh when packingList changes
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  const packedCount = items.filter((i) => i.packed).length;
+  const progress = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0;
+
+  const toggleItem = (index) => {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, packed: !it.packed } : it)));
   };
 
-  return renderPackingList();
+  const addItem = () => {
+    const name = newItem.trim();
+    if (!name) return;
+    setItems((prev) => [...prev, { name, packed: false }]);
+    setNewItem('');
+  };
+
+  const removeItem = (index) => {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <Card className="border-0 shadow-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/20 p-3 rounded-xl">
+              <Backpack className="h-6 w-6" />
+            </div>
+            <span className="text-2xl font-bold">Packing List</span>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold">{packedCount}/{items.length}</div>
+            <div className="w-28 bg-white/20 rounded-full h-3 mt-2">
+              <div className="bg-white h-3 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="p-6">
+        {/* Add item row */}
+        <div className="flex items-center gap-2 mb-6">
+          <input
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            placeholder="Add a custom item (e.g., Power bank)"
+            className="flex-1 border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all"
+          />
+          <button
+            onClick={addItem}
+            className="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl px-4 py-3 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add
+          </button>
+        </div>
+
+        {/* Items list */}
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center space-x-4 p-4 rounded-xl cursor-pointer transition-all ${
+                item.packed
+                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-md'
+                  : 'hover:bg-gray-50 border-2 border-transparent hover:border-gray-200'
+              }`}
+            >
+              <button onClick={() => toggleItem(idx)} className="p-1" aria-label="toggle packed">
+                {item.packed ? (
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                ) : (
+                  <Circle className="h-6 w-6 text-gray-400" />
+                )}
+              </button>
+              <span className={`flex-1 font-medium ${item.packed ? 'text-green-800 line-through' : 'text-gray-700'}`}>
+                {item.name}
+              </span>
+              <button onClick={() => removeItem(idx)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="remove item">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default PackingTab;

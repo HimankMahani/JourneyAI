@@ -131,7 +131,7 @@ const Planning = () => {
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
-  const [checkedItems, setCheckedItems] = useState({});
+  // Packing list is now managed inside PackingTab; no external checked state required
   const [isRegenerating, setIsRegenerating] = useState(false);
   
   const [trip, setTrip] = useState(null);
@@ -258,10 +258,7 @@ const Planning = () => {
     }
   }, [trip]);
 
-  const togglePackingItem = (category, index) => {
-    const key = `${category}-${index}`;
-    setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  // (Removed) togglePackingItem; internalized into PackingTab
 
   useEffect(() => {
     const itineraryChanged = itinerary && previousItineraryRef.current !== itinerary;
@@ -439,11 +436,7 @@ const Planning = () => {
 
           {/* Packing Tab */}
           {activeTab === 'packing' && (
-            <PackingTab 
-              packingList={packingList}
-              checkedItems={checkedItems}
-              togglePackingItem={togglePackingItem}
-            />
+            <PackingTab packingList={packingList} />
           )}
 
           {/* Destination Info Tab */}
