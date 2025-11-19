@@ -4,95 +4,44 @@ import { getCuratedDestinationImage } from '../data/curatedDestinations.js';
 
 dotenv.config();
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
 /**
- * Get location photo from Google Places API
+ * Get location photo from Unsplash API
  * @param {string} placeName - Name of the place
  * @returns {Promise<string|null>} - Photo URL or null
  */
-export const getGooglePlacesPhoto = async (placeName) => {
+export const getUnsplashPhoto = async (placeName) => {
   try {
-    if (!GOOGLE_MAPS_API_KEY) {
+    if (!UNSPLASH_ACCESS_KEY) {
+      console.warn('UNSPLASH_ACCESS_KEY is not set');
       return null;
     }
 
-
-    // First, search for the place to get place_id
-    const searchResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
+    const response = await axios.get('https://api.unsplash.com/search/photos', {
       params: {
         query: placeName,
-        key: GOOGLE_MAPS_API_KEY
+        per_page: 1,
+        orientation: 'landscape'
+      },
+      headers: {
+        'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
       }
     });
 
-    if (searchResponse.data.results && searchResponse.data.results.length > 0) {
-      const place = searchResponse.data.results[0];
-      
-      if (place.photos && place.photos.length > 0) {
-        const photoReference = place.photos[0].photo_reference;
-        const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_MAPS_API_KEY}`;
-        
-        return photoUrl;
-      }
+    if (response.data.results && response.data.results.length > 0) {
+      return response.data.results[0].urls.regular;
     }
 
     return null;
   } catch (error) {
-    console.error(`Error getting Google Places photo for ${placeName}:`, error.message);
+    console.error(`Error getting Unsplash photo for ${placeName}:`, error.message);
     return null;
   }
 };
 
 /**
- * Get location photo from Wikimedia Commons (free, location-specific photos)
- * @param {string} placeName - Name of the place
- * @returns {Promise<string|null>} - Photo URL or null
- */
-export const getWikimediaPhoto = async (placeName) => {
-  try {
-
-    // Search for Wikipedia article about the place
-    const searchResponse = await axios.get('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(placeName));
-    
-    if (searchResponse.data && searchResponse.data.originalimage) {
-      return searchResponse.data.originalimage.source;
-    }
-
-    // Alternative: Try searching with different variations
-    const variations = [
-      `${placeName} city`,
-      `${placeName}`,
-      placeName.split(',')[0]?.trim()
-    ];
-
-    for (const variation of variations) {
-      try {
-        const response = await axios.get('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(variation));
-        if (response.data && response.data.originalimage) {
-          return response.data.originalimage.source;
-        }
-      } catch (err) {
-        continue;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error getting Wikimedia photo for ${placeName}:`, error.message);
-    return null;
-  }
-};
-
-/**
- * Search for destination images using Pexels API
- * @param {string} placeName - Name of the place to search for
- * @param {number} maxPhotos - Maximum number of photos to return (default: 1)
- * @returns {Promise<Object>} - Place photos data
- */
-/**
- * Search for destination images using multiple sources
+ * Search for destination images using Unsplash API
  * @param {string} placeName - Name of the place to search for
  * @param {number} maxPhotos - Maximum number of photos to return (default: 1)
  * @returns {Promise<Object>} - Place photos data
@@ -107,37 +56,33 @@ export const searchPlacePhotos = async (placeName, maxPhotos = 1) => {
     const cleanPlaceName = placeName.trim();
     const photos = [];
 
-    // Try Google Places first
-    const googlePhoto = await getGooglePlacesPhoto(cleanPlaceName);
-    if (googlePhoto) {
-      photos.push({
-        photoUrl: googlePhoto,
-        source: 'google_places',
-        searchQuery: cleanPlaceName
-      });
-    }
-
-    // Try Wikimedia if we need more photos or Google failed
-    if (photos.length < maxPhotos) {
-      const wikimediaPhoto = await getWikimediaPhoto(cleanPlaceName);
-      if (wikimediaPhoto) {
-        photos.push({
-          photoUrl: wikimediaPhoto,
-          source: 'wikimedia',
-          searchQuery: cleanPlaceName
+    // Try Unsplash
+    if (UNSPLASH_ACCESS_KEY) {
+      try {
+        const response = await axios.get('https://api.unsplash.com/search/photos', {
+          params: {
+            query: cleanPlaceName,
+            per_page: maxPhotos,
+            orientation: 'landscape'
+          },
+          headers: {
+            'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
+          }
         });
-      }
-    }
 
-    // Try Pexels if we still need more photos
-    if (photos.length < maxPhotos && PEXELS_API_KEY) {
-      const pexelsPhoto = await getPexelsLocationPhoto(cleanPlaceName);
-      if (pexelsPhoto) {
-        photos.push({
-          photoUrl: pexelsPhoto,
-          source: 'pexels',
-          searchQuery: cleanPlaceName
-        });
+        if (response.data.results && response.data.results.length > 0) {
+          response.data.results.forEach(photo => {
+            photos.push({
+              photoUrl: photo.urls.regular,
+              source: 'unsplash',
+              searchQuery: cleanPlaceName,
+              photographer: photo.user.name,
+              photographerUrl: photo.user.links.html
+            });
+          });
+        }
+      } catch (err) {
+        console.error('Unsplash search error:', err.message);
       }
     }
 
@@ -148,7 +93,7 @@ export const searchPlacePhotos = async (placeName, maxPhotos = 1) => {
           name: cleanPlaceName,
           searchQuery: cleanPlaceName
         },
-        photos: photos.slice(0, maxPhotos)
+        photos: photos
       };
     }
     
@@ -187,27 +132,13 @@ export const getDestinationImage = async (placeName) => {
       return curatedImage;
     }
 
-    // Priority 2: Try Google Places API (most accurate for locations)
-    const googlePhoto = await getGooglePlacesPhoto(cleanPlace);
-    if (googlePhoto) {
-      return googlePhoto;
+    // Priority 2: Try Unsplash API
+    const unsplashPhoto = await getUnsplashPhoto(cleanPlace);
+    if (unsplashPhoto) {
+      return unsplashPhoto;
     }
 
-    // Priority 3: Try Wikimedia Commons (Wikipedia photos)
-    const wikimediaPhoto = await getWikimediaPhoto(cleanPlace);
-    if (wikimediaPhoto) {
-      return wikimediaPhoto;
-    }
-
-    // Priority 4: Try Pexels with very specific location-based search
-    if (PEXELS_API_KEY) {
-      const pexelsPhoto = await getPexelsLocationPhoto(cleanPlace);
-      if (pexelsPhoto) {
-        return pexelsPhoto;
-      }
-    }
-
-    // Priority 5: Smart fallback based on destination type
+    // Priority 3: Smart fallback based on destination type
     const smartFallback = getSmartTravelFallback(cleanPlace);
     return smartFallback;
 
@@ -217,71 +148,7 @@ export const getDestinationImage = async (placeName) => {
   }
 };
 
-/**
- * Get location photo from Pexels with very specific search terms
- * @param {string} placeName - Name of the place
- * @returns {Promise<string|null>} - Photo URL or null
- */
-export const getPexelsLocationPhoto = async (placeName) => {
-  try {
-    if (!PEXELS_API_KEY) {
-      return null;
-    }
 
-    // Very specific location-based search terms
-    const searchTerms = [
-      `${placeName} skyline`,
-      `${placeName} cityscape`,
-      `${placeName} downtown`,
-      `${placeName} landmark`,
-      `${placeName} architecture famous`
-    ];
-
-    for (const term of searchTerms) {
-      try {
-        const response = await axios.get('https://api.pexels.com/v1/search', {
-          headers: {
-            'Authorization': PEXELS_API_KEY
-          },
-          params: {
-            query: term,
-            per_page: 5,
-            orientation: 'landscape'
-          }
-        });
-        
-        if (response.data.photos && response.data.photos.length > 0) {
-          // Find the most relevant photo
-          const relevantPhoto = response.data.photos.find(photo => {
-            const altText = (photo.alt || '').toLowerCase();
-            const placeLower = placeName.toLowerCase();
-            
-            // Must contain the place name and architectural/city terms
-            return altText.includes(placeLower) && 
-                   (altText.includes('building') || 
-                    altText.includes('city') || 
-                    altText.includes('skyline') ||
-                    altText.includes('architecture') ||
-                    altText.includes('landmark') ||
-                    altText.includes('tower') ||
-                    altText.includes('bridge'));
-          });
-          
-          if (relevantPhoto) {
-            return relevantPhoto.src.medium;
-          }
-        }
-      } catch (searchError) {
-        continue;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error getting Pexels photo for ${placeName}:`, error);
-    return null;
-  }
-};
 
 /**
  * Get a smart travel-themed fallback image based on destination characteristics
