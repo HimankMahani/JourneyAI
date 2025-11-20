@@ -1,7 +1,30 @@
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const TripGenerationLoader = () => {
+  const [progress, setProgress] = useState(8);
+
+  useEffect(() => {
+    let mounted = true;
+    const maxProgress = 92; // keep a little room for completion
+    const interval = setInterval(() => {
+      if (!mounted) return;
+      setProgress((prev) => {
+        if (prev >= maxProgress) return prev;
+        // Ease-out increment: larger jumps early, smaller near the cap
+        const step = Math.max(0.4, (maxProgress - prev) * 0.06);
+        const next = Math.min(maxProgress, prev + step);
+        return next;
+      });
+    }, 180);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-purple-900/30 to-blue-900/80 backdrop-blur-xl z-50 flex items-center justify-center overflow-hidden">
       {/* Animated Background Elements */}
@@ -101,7 +124,7 @@ export const TripGenerationLoader = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
             <div 
               className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-purple-400 rounded-full relative overflow-hidden"
-              style={{ width: '85%', transition: 'width 3s ease-in-out' }}
+              style={{ width: `${progress}%`, transition: 'width 300ms ease-out' }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
               <div className="absolute right-0 top-0 w-8 h-full bg-gradient-to-r from-transparent to-white/50 animate-pulse"></div>
