@@ -214,19 +214,38 @@ STRICT REQUIREMENTS:
 };
 
 /**
- * Generate local travel tips for a destination
+ * Generate local travel tips and cultural information for a destination
  * @param {string} destination - The destination to get tips for
- * @returns {Promise<string>} - The generated tips
+ * @returns {Promise<string>} - The generated tips as a JSON object
  */
 export const generateLocalTips = async (destination) => {
-  const prompt = `Provide 5-7 useful local tips for travelers visiting ${destination}. Include information about:
-  1. Local customs and etiquette
-  2. Transportation tips
-  3. Safety advice
-  4. Money-saving suggestions
-  5. Best times to visit popular attractions
-  6. Any local scams to be aware of
-  7. Food and dining recommendations`;
+  const prompt = `Provide local culture information and travel tips for travelers visiting ${destination}.
+  
+  CRITICAL FORMATTING: Respond with ONLY a valid JSON object. No markdown, no explanations.
+  
+  JSON Structure Required:
+  {
+    "culture": [
+      "Cultural tip 1",
+      "Cultural tip 2",
+      "Cultural tip 3",
+      "Cultural tip 4",
+      "Cultural tip 5"
+    ],
+    "tips": [
+      "Travel tip 1",
+      "Travel tip 2",
+      "Travel tip 3",
+      "Travel tip 4",
+      "Travel tip 5"
+    ]
+  }
+
+  STRICT REQUIREMENTS:
+  1. Return ONLY a JSON object
+  2. "culture" array must have exactly 5 items focusing on local customs, etiquette, and social norms
+  3. "tips" array must have exactly 5 items focusing on practical advice (transport, safety, money, etc.)
+  4. Be specific to ${destination}`;
   
   return generateContent(prompt, { temperature: 0.6 });
 };

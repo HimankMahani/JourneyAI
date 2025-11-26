@@ -149,160 +149,148 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
     );
     
     let parsedTips = [];
+    let parsedCulture = [];
+    let isJsonFormat = false;
+
     if (aiTips?.content) {
       try {
-        // Try to parse the AI tips content
-        if (typeof aiTips.content === 'string') {
-          // Handle markdown-formatted content from AI
-          const content = aiTips.content;
+        // Try to parse as JSON first (new format)
+        const cleanJson = typeof aiTips.content === 'string' 
+          ? aiTips.content.replace(/```json/g, '').replace(/```/g, '').trim() 
+          : aiTips.content;
           
-          // Split by lines and filter out headers, empty lines, and formatting
-          const lines = content.split('\n').filter(line => {
-            const trimmed = line.trim();
-            return trimmed.length > 0 && 
-                   !trimmed.startsWith('**') && // Skip bold headers
-                   !trimmed.startsWith('#') && // Skip markdown headers
-                   !trimmed.match(/^\*\*\d+\./) && // Skip numbered section headers
-                   !trimmed.toLowerCase().includes('here are') && // Skip intro lines
-                   !trimmed.toLowerCase().includes('enjoy your trip') && // Skip outro lines
-                   trimmed.length > 20; // Only substantial content
-          });
-          
-          parsedTips = lines
-            .map(line => {
-              // Clean up markdown formatting and list prefixes
-              return line
-                .replace(/^\*\s+/, '') // Remove markdown bullets
-                .replace(/^\*\*(.+?)\*\*:?\s*/, '') // Remove bold text (like **Metro is Your Friend:**)
-                .replace(/^\d+\.\s*/, '') // Remove numbered lists
-                .replace(/^[-*•]\s*/, '') // Remove bullet points
-                .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold formatting but keep text
-                .trim();
-            })
-            .filter(tip => {
-              // Final filtering for quality tips
-              return tip.length > 15 && 
-                     !tip.toLowerCase().includes('covering the areas') &&
-                     !tip.toLowerCase().startsWith('okay,') &&
-                     !tip.includes(':') || tip.split(':').length === 2; // Allow tips with one colon
-            })
-            .slice(0, 8); // Limit to 8 best tips for better UI
-          
-          // If no good tips found, try to split by common delimiters
-          if (parsedTips.length === 0) {
-            const delimiters = ['. ', '; ', '\n\n'];
-            for (const delimiter of delimiters) {
-              const splitTips = aiTips.content.split(delimiter).filter(tip => tip.trim().length > 10);
-              if (splitTips.length > 1) {
-                parsedTips = splitTips.map(tip => tip.trim());
-                break;
+        const parsedData = typeof cleanJson === 'string' ? JSON.parse(cleanJson) : cleanJson;
+        
+        if (parsedData.culture && Array.isArray(parsedData.culture)) {
+          parsedCulture = parsedData.culture;
+          isJsonFormat = true;
+        }
+        
+        if (parsedData.tips && Array.isArray(parsedData.tips)) {
+          parsedTips = parsedData.tips;
+          isJsonFormat = true;
+        }
+      } catch (e) {
+        // Not JSON, fall back to text parsing
+      }
+
+      if (!isJsonFormat) {
+        try {
+          // Try to parse the AI tips content (old format)
+          if (typeof aiTips.content === 'string') {
+            // Handle markdown-formatted content from AI
+            const content = aiTips.content;
+            
+            // Split by lines and filter out headers, empty lines, and formatting
+            const lines = content.split('\n').filter(line => {
+              const trimmed = line.trim();
+              return trimmed.length > 0 && 
+                     !trimmed.startsWith('**') && // Skip bold headers
+                     !trimmed.startsWith('#') && // Skip markdown headers
+                     !trimmed.match(/^\*\*\d+\./) && // Skip numbered section headers
+                     !trimmed.toLowerCase().includes('here are') && // Skip intro lines
+                     !trimmed.toLowerCase().includes('enjoy your trip') && // Skip outro lines
+                     trimmed.length > 20; // Only substantial content
+            });
+            
+            parsedTips = lines
+              .map(line => {
+                // Clean up markdown formatting and list prefixes
+                return line
+                  .replace(/^\*\s+/, '') // Remove markdown bullets
+                  .replace(/^\*\*(.+?)\*\*:?\s*/, '') // Remove bold text (like **Metro is Your Friend:**)
+                  .replace(/^\d+\.\s*/, '') // Remove numbered lists
+                  .replace(/^[-*•]\s*/, '') // Remove bullet points
+                  .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold formatting but keep text
+                  .trim();
+              })
+              .filter(tip => {
+                // Final filtering for quality tips
+                return tip.length > 15 && 
+                       !tip.toLowerCase().includes('covering the areas') &&
+                       !tip.toLowerCase().startsWith('okay,') &&
+                       !tip.includes(':') || tip.split(':').length === 2; // Allow tips with one colon
+              })
+              .slice(0, 5); // Limit to 5 best tips
+            
+            // If no good tips found, try to split by common delimiters
+            if (parsedTips.length === 0) {
+              const delimiters = ['. ', '; ', '\n\n'];
+              for (const delimiter of delimiters) {
+                const splitTips = aiTips.content.split(delimiter).filter(tip => tip.trim().length > 10);
+                if (splitTips.length > 1) {
+                  parsedTips = splitTips.map(tip => tip.trim()).slice(0, 5);
+                  break;
+                }
               }
             }
+          } else if (Array.isArray(aiTips.content)) {
+            parsedTips = aiTips.content.filter(tip => tip && tip.length > 10).slice(0, 5);
           }
-        } else if (Array.isArray(aiTips.content)) {
-          parsedTips = aiTips.content.filter(tip => tip && tip.length > 10);
+        } catch (error) {
+          console.error('Error parsing AI tips:', error);
         }
-      } catch (error) {
-        console.error('Error parsing AI tips:', error);
       }
-    }
-    
-    // If still no tips found but we have content, use the whole content as a single tip
-    if (parsedTips.length === 0 && aiTips?.content && typeof aiTips.content === 'string' && aiTips.content.length > 20) {
-      parsedTips = [aiTips.content.trim()];
     }
     
     // Fallback mock data for culture info
     const mockCulturalData = {
       'Paris': {
-        culture: 'French culture values politeness and formal greetings. Always say "Bonjour" when entering shops and "Au revoir" when leaving.',
+        culture: [
+          'French culture values politeness and formal greetings.',
+          'Always say "Bonjour" when entering shops.',
+          'Say "Au revoir" when leaving any establishment.',
+          'Dress smartly; casual wear like sweatpants is rare.',
+          'Keep your voice down in public spaces.'
+        ],
         fallbackTips: [
           'Restaurants typically open for dinner at 7:30 PM',
           'Tipping 10% is appreciated but not mandatory',
           'Many shops close on Sundays',
-          'Learn basic French phrases - locals appreciate the effort'
+          'Learn basic French phrases - locals appreciate the effort',
+          'Metro is the fastest way to get around'
         ]
       },
       'Tokyo': {
-        culture: 'Japanese culture emphasizes respect and politeness. Bowing is common and removing shoes indoors is expected.',
+        culture: [
+          'Japanese culture emphasizes respect and politeness.',
+          'Bowing is common and expected.',
+          'Remove shoes when entering homes and some businesses.',
+          'Avoid eating while walking.',
+          'Be quiet on public transportation.'
+        ],
         fallbackTips: [
           'Cash is still widely used - carry yen',
           'Avoid eating while walking',
           'Be quiet on public transportation',
-          'Don\'t tip - it\'s not part of Japanese culture'
+          'Don\'t tip - it\'s not part of Japanese culture',
+          'Purchase a Suica or Pasmo card for travel'
         ]
       },
-      'New York': {
-        culture: 'Fast-paced city culture with diverse neighborhoods. Direct communication is normal and expected.',
-        fallbackTips: [
-          'Subway runs 24/7 but can be crowded during rush hour',
-          'Tipping 18-20% is standard at restaurants',
-          'Walk quickly and stay aware of your surroundings',
-          'Don\'t block sidewalks - New Yorkers are always in a hurry'
-        ]
-      },
-      'London': {
-        culture: 'British culture values queuing and politeness. "Please" and "thank you" are used frequently.',
-        fallbackTips: [
-          'Stand on the right side of escalators',
-          'Pubs close early compared to other cities',
-          'Carry an umbrella - weather can change quickly',
-          'Mind the gap on the London Underground'
-        ]
-      },
-      'Barcelona': {
-        culture: 'Spanish culture includes late dining and afternoon siestas. Family and social connections are important.',
-        fallbackTips: [
-          'Lunch is typically 2-4 PM, dinner after 9 PM',
-          'Many shops close during siesta (2-5 PM)',
-          'Learn basic Spanish phrases - locals appreciate the effort',
-          'Pickpockets are common in tourist areas - stay vigilant'
-        ]
-      },
-      'Rome': {
-        culture: 'Italian culture emphasizes family, food, and taking time to enjoy life. Gestures are an important part of communication.',
-        fallbackTips: [
-          'Dress modestly when visiting churches',
-          'Tipping 10-15% is appreciated but not mandatory',
-          'Restaurants often close between lunch and dinner',
-          'Learn basic Italian greetings'
-        ]
-      },
-      'Amsterdam': {
-        culture: 'Dutch culture values directness and informality. Cycling is a major part of daily life.',
-        fallbackTips: [
-          'Rent a bike to get around like a local',
-          'Be careful of bike lanes when walking',
-          'Many locals speak excellent English',
-          'Tipping is appreciated but not expected'
-        ]
-      },
-      'Dubai': {
-        culture: 'UAE culture blends traditional Islamic values with modern cosmopolitan lifestyle. Respect for local customs is important.',
-        fallbackTips: [
-          'Dress conservatively, especially in public areas',
-          'Avoid public displays of affection',
-          'Friday is the holy day - some businesses may be closed',
-          'Haggling is common in souks but not in malls'
-        ]
-      }
+      // Add more cities as needed or rely on generic fallback
     };
     
     const mockData = mockCulturalData[destination] || {
-      culture: 'Every destination has its unique culture and customs. Research local etiquette and traditions before your trip to show respect for the local community.',
+      culture: [
+        'Research local etiquette and traditions before your trip.',
+        'Learn a few basic phrases in the local language.',
+        'Dress modestly when visiting religious sites.',
+        'Ask for permission before taking photos of people.',
+        'Respect local dining customs and meal times.'
+      ],
       fallbackTips: [
-        'Learn basic phrases in the local language',
-        'Research local customs and dress codes',
-        'Be respectful of religious and cultural sites',
-        'Try local cuisine and respect dining customs',
-        'Observe and follow local social norms'
+        'Carry a reusable water bottle to save money.',
+        'Download offline maps before you go.',
+        'Keep a copy of your passport in a separate bag.',
+        'Check if you need a power adapter.',
+        'Notify your bank about your travel plans.'
       ]
     };
     
     return {
-      culture: mockData.culture,
+      culture: parsedCulture.length > 0 ? parsedCulture : (Array.isArray(mockData.culture) ? mockData.culture : [mockData.culture]),
       tips: parsedTips.length > 0 ? parsedTips : mockData.fallbackTips,
-      isAIGenerated: parsedTips.length > 0
+      isAIGenerated: parsedCulture.length > 0 || parsedTips.length > 0
     };
   };
 
@@ -518,9 +506,22 @@ const DestinationInfoTab = ({ destination, weather, tripData }) => {
                 <Heart className="w-5 h-5" />
                 Local Culture
               </h4>
-              <p className="text-gray-700 leading-relaxed">
-                {culturalInfo.culture}
-              </p>
+              <div className="space-y-3">
+                {Array.isArray(culturalInfo.culture) ? (
+                  culturalInfo.culture.map((item, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex-shrink-0">
+                        {index + 1}
+                      </Badge>
+                      <span className="text-gray-700">{item}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">
+                    {culturalInfo.culture}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Local Tips */}

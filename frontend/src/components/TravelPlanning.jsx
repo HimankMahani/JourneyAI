@@ -6,6 +6,7 @@ import { useTripContext } from "@/contexts/useTripContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/useAuth";
+import LocationInput from "./ui/LocationInput";
 
 const TravelPlanning = () => {
   const { generateAIItinerary } = useTripContext();
@@ -161,37 +162,29 @@ const TravelPlanning = () => {
 
               <div className="p-10 relative">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-                  <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-lg mr-3">
-                        <MapPin className="h-4 w-4 text-white" />
-                      </div>
-                      From
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Your starting location"
-                      value={formData.from}
-                      onChange={(e) => handleInputChange('from', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
-                    />
-                  </div>
+                  <LocationInput
+                    label="From"
+                    placeholder="Your starting location"
+                    value={formData.from}
+                    onChange={(value) => handleInputChange('from', value)}
+                    className="space-y-3"
+                    icon={{
+                      component: <MapPin className="h-4 w-4 text-white" />,
+                      className: "bg-gradient-to-r from-green-500 to-emerald-500"
+                    }}
+                  />
 
-                  <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
-                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg mr-3">
-                        <MapPin className="h-4 w-4 text-white" />
-                      </div>
-                      Destination
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Where do you want to go?"
-                      value={formData.destination}
-                      onChange={(e) => handleInputChange('destination', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
-                    />
-                  </div>
+                  <LocationInput
+                    label="Destination"
+                    placeholder="Where do you want to go?"
+                    value={formData.destination}
+                    onChange={(value) => handleInputChange('destination', value)}
+                    className="space-y-3"
+                    icon={{
+                      component: <MapPin className="h-4 w-4 text-white" />,
+                      className: "bg-gradient-to-r from-purple-500 to-pink-500"
+                    }}
+                  />
 
                   <div className="space-y-3 group">
                     <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
