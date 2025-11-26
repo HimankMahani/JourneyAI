@@ -230,3 +230,45 @@ export const generateLocalTips = async (destination) => {
   
   return generateContent(prompt, { temperature: 0.6 });
 };
+
+/**
+ * Generate a packing list based on destination, dates, and weather
+ * @param {string} destination - The destination
+ * @param {string} startDate - Trip start date
+ * @param {string} endDate - Trip end date
+ * @returns {Promise<string>} - The generated packing list as a JSON array
+ */
+export const generatePackingList = async (destination, startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const month = start.toLocaleString('default', { month: 'long' });
+  
+  const prompt = `Generate a comprehensive packing list for a trip to ${destination} in ${month}.
+  
+  Consider:
+  1. Weather conditions for ${month} in ${destination}
+  2. Cultural dress codes
+  3. Essential travel documents
+  4. Electronics and gadgets
+  5. Toiletries and health items
+  6. Clothing for different activities (sightseeing, dining, etc.)
+
+  CRITICAL FORMATTING: Respond with ONLY a valid JSON array of strings. No markdown, no explanations.
+  
+  Example format:
+  [
+    "Passport and Visa",
+    "Universal Power Adapter",
+    "Light Rain Jacket",
+    "Comfortable Walking Shoes",
+    "Sunscreen (SPF 50+)"
+  ]
+  
+  STRICT REQUIREMENTS:
+  1. Return ONLY a JSON array of strings
+  2. Include 15-25 essential items
+  3. Be specific to ${destination} and the season (${month})
+  4. No categories, just a flat list of items`;
+
+  return generateContent(prompt, { temperature: 0.5 });
+};

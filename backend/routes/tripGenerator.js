@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { auth } from '../middleware/auth.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
-import { generateTravelItinerary, generateLocalTips } from '../services/ai.service.js';
+import { generateTravelItinerary, generateLocalTips, generatePackingList } from '../services/ai.service.js';
 import { 
   parseItineraryJSON, 
   validateItinerary, 
@@ -206,6 +206,7 @@ router.post('/itinerary', auth, async (req, res) => {
     // Step 1: Generate travel itinerary using Gemini API with fromLocation
     let generatedItinerary;
     let generatedLocalTips;
+    let generatedPackingList;
     
     try {
       generatedItinerary = await generateTravelItinerary({
@@ -220,6 +221,9 @@ router.post('/itinerary', auth, async (req, res) => {
       
       // Step 2: Generate local tips
       generatedLocalTips = await generateLocalTips(destination);
+
+      // Step 3: Generate packing list
+      generatedPackingList = await generatePackingList(destination, startDate, endDate);
     } catch (error) {
       console.error('Error using Gemini API:', error);
       return res.status(500).json({
@@ -227,6 +231,26 @@ router.post('/itinerary', auth, async (req, res) => {
         message: 'Failed to generate content using AI service',
         error: error.message
       });
+    }
+
+    // Process packing list
+    let packingListItems = [];
+    try {
+      if (generatedPackingList) {
+        // Clean up the response if it contains markdown code blocks
+        const cleanJson = generatedPackingList.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsedList = JSON.parse(cleanJson);
+        
+        if (Array.isArray(parsedList)) {
+          packingListItems = parsedList.map(item => ({
+            name: item,
+            packed: false
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse generated packing list:', e);
+      // Fallback to empty list, frontend will handle defaults
     }
 
     // Step 3: Create a new trip with the generated itinerary
@@ -246,6 +270,7 @@ router.post('/itinerary', auth, async (req, res) => {
         currency: 'INR'
       },
       travelers: parseTravelersCount(travelers), // Parse travelers properly
+      packingList: packingListItems,
       aiSuggestions: [
         {
           content: generatedItinerary,
@@ -360,11 +385,31 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
       travelers: trip.travelers || 1 // Use existing travelers count or default to 1
     });
 
+    // Generate new packing list
+    const generatedPackingList = await generatePackingList(trip.destination.name, trip.startDate, trip.endDate);
+
     // Add the new suggestion to the trip
     trip.aiSuggestions.push({
       content: generatedItinerary,
       type: 'itinerary'
     });
+
+    // Update packing list
+    try {
+      if (generatedPackingList) {
+        const cleanJson = generatedPackingList.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsedList = JSON.parse(cleanJson);
+        
+        if (Array.isArray(parsedList)) {
+          trip.packingList = parsedList.map(item => ({
+            name: item,
+            packed: false
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse regenerated packing list:', e);
+    }
 
     // Parse the itinerary directly
     try {

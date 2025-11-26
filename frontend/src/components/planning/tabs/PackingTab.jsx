@@ -45,15 +45,17 @@ const normalizeToFlatList = (packingList) => {
 
 const PackingTab = ({ packingList, onUpdate }) => {
   const initialItems = useMemo(() => {
-    // If packingList is explicitly provided (even empty array), use it
-    if (Array.isArray(packingList)) {
+    // If packingList is an array with items, use it
+    if (Array.isArray(packingList) && packingList.length > 0) {
       return normalizeToFlatList(packingList);
     }
-    // If packingList is null/undefined, use defaults
+
+    // If packingList is null/undefined or an empty array/object, fall back to defaults
     if (!packingList) {
       return DEFAULT_ITEMS.map((n) => ({ name: n, packed: false }));
     }
-    // If object, normalize it
+
+    // If object, normalize it and fall back to defaults when empty
     const normalized = normalizeToFlatList(packingList);
     return normalized.length > 0 ? normalized : DEFAULT_ITEMS.map((n) => ({ name: n, packed: false }));
   }, [packingList]);
