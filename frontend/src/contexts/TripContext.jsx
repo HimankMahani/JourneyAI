@@ -202,16 +202,6 @@ export const TripProvider = ({ children }) => {
     }
   }, []);
 
-  const getAIResponses = useCallback(async (tripId, type = null) => {
-    try {
-      const response = await tripService.getAIResponses(tripId, type);
-      return { success: true, data: response };
-    } catch (err) {
-      console.error('Error getting AI responses:', err);
-      return { success: false, error: err.message || 'Failed to get AI responses' };
-    }
-  }, []);
-
   const createTripFromDestination = useCallback(async (destinationData) => {
     try {
       setLoading(true);
@@ -317,7 +307,6 @@ export const TripProvider = ({ children }) => {
     regenerateTripItinerary,
     reparseItinerary,
     getStorageStats,
-    getAIResponses,
     createTripFromDestination,
     updateItineraryActivity
   };

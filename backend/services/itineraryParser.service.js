@@ -359,33 +359,7 @@ export const categorizeActivity = (activityText) => {
   return 'activity';
 };
 
-/**
- * Parse AI response from stored MongoDB data
- * @param {Object} storedData - The AIResponse document from MongoDB
- * @param {string} startDate - The start date of the trip
- * @returns {Array} - Parsed itinerary array
- */
-export const parseStoredAIResponse = (storedData, startDate) => {
-  if (!storedData || !storedData.rawResponse) {
-    console.error('No stored AI response data found');
-    return [];
-  }
-  
-  try {
-    // Try JSON parsing first (preferred method)
-    return parseItineraryJSON(storedData.rawResponse, startDate);
-  } catch (jsonError) {
-    console.error('JSON parsing failed, trying text parsing:', jsonError.message);
-    
-    try {
-      // Fall back to text parsing
-      return parseItineraryText(storedData.rawResponse, startDate);
-    } catch (textError) {
-      console.error('Text parsing also failed:', textError.message);
-      return [];
-    }
-  }
-};
+
 
 /**
  * Validate itinerary data structure

@@ -5,14 +5,7 @@ import Trip from '../models/Trip.js';
 import User from '../models/User.js';
 import { generateTravelItinerary, generateLocalTips } from '../services/ai.service.js';
 import { 
-  storeAIResponse, 
-  retrieveAIResponse, 
-  listAIResponses,
-  getStorageStats,
-  cleanupOldAIResponses 
-} from '../services/aiResponse.service.js';
-import { 
-  parseStoredAIResponse, 
+  parseItineraryJSON, 
   validateItinerary, 
   normalizeItinerary 
 } from '../services/itineraryParser.service.js';
@@ -270,51 +263,11 @@ router.post('/itinerary', auth, async (req, res) => {
     const tripId = savedTrip._id.toString();
 
 
-    // Step 4: Store the AI response in MongoDB
-    try {
-      const itineraryResponse = await storeAIResponse(
-        tripId, 
-        req.userId,
-        generatedItinerary, 
-        'itinerary', 
-        {
-          from: fromLocation,
-          destination,
-          startDate,
-          endDate,
-          interests,
-          budget,
-          travelers,
-          userLocation: fromLocation,
-          prompt: 'AI-generated travel itinerary'
-        }
-      );
-      
-      const tipsResponse = await storeAIResponse(
-        tripId, 
-        req.userId,
-        generatedLocalTips, 
-        'tips', 
-        {
-          destination,
-          prompt: 'AI-generated local tips',
-          userLocation: fromLocation
-        }
-      );
-      
-    } catch (storageError) {
-      console.error('Failed to store AI responses:', storageError);
-      // Continue with trip creation even if storage fails
-    }
-
-    // Parse the itinerary from MongoDB storage
+    // Step 4: Parse the itinerary directly
     let parsedItinerary = [];
     try {
-      const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
-      
-      if (storedItinerary) {
-        
-        parsedItinerary = parseStoredAIResponse(storedItinerary, startDate);
+      if (generatedItinerary) {
+        parsedItinerary = parseItineraryJSON(generatedItinerary, startDate);
         
         if (parsedItinerary && parsedItinerary.length > 0) {
           // Validate the parsed itinerary
@@ -329,13 +282,12 @@ router.post('/itinerary', auth, async (req, res) => {
           }
 
           applyItineraryCostToBudget(savedTrip, savedTrip.itinerary);
-        } else {
         }
       } else {
-        console.warn('Could not retrieve stored AI response for parsing');
+        console.warn('No generated itinerary to parse');
       }
     } catch (parseError) {
-      console.error("Error parsing itinerary from stored document:", parseError.message);
+      console.error("Error parsing itinerary:", parseError.message);
       console.error("Full parse error:", parseError);
     }
 
@@ -408,45 +360,16 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
       travelers: trip.travelers || 1 // Use existing travelers count or default to 1
     });
 
-    // Store the new AI response in MongoDB
-    try {
-      const aiResponse = await storeAIResponse(
-        tripId, 
-        req.userId,
-        generatedItinerary, 
-        'itinerary', 
-        {
-          destination: trip.destination.name,
-          startDate: trip.startDate,
-          endDate: trip.endDate,
-          interests,
-          budget: budgetForAI,
-          prompt: 'AI-regenerated travel itinerary',
-          regenerated: true
-        }
-      );
-      
-      
-      // Clean up old responses (keep only latest 3)
-      await cleanupOldAIResponses(tripId, 'itinerary', 3);
-    } catch (storageError) {
-      console.error('Failed to store regenerated AI response:', storageError);
-      // Continue with regeneration even if storage fails
-    }
-
     // Add the new suggestion to the trip
     trip.aiSuggestions.push({
       content: generatedItinerary,
       type: 'itinerary'
     });
 
-    // Parse the itinerary from the stored file
+    // Parse the itinerary directly
     try {
-      const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
-      
-      if (storedItinerary) {
-        
-        const parsedItinerary = parseStoredAIResponse(storedItinerary, trip.startDate);
+      if (generatedItinerary) {
+        const parsedItinerary = parseItineraryJSON(generatedItinerary, trip.startDate);
         
         if (parsedItinerary && parsedItinerary.length > 0) {
           
@@ -461,13 +384,12 @@ router.post('/update-itinerary/:id', auth, async (req, res) => {
           }
 
           applyItineraryCostToBudget(trip, trip.itinerary);
-        } else {
         }
       } else {
-        console.warn('Could not retrieve stored AI response for regeneration parsing');
+        console.warn('No generated itinerary to parse');
       }
     } catch (parseError) {
-      console.error("Error parsing regenerated itinerary from stored file:", parseError);
+      console.error("Error parsing regenerated itinerary:", parseError);
     }
 
     // Save the updated trip
@@ -510,20 +432,22 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to access this trip' });
     }
 
-    // Retrieve the stored AI response
-    const storedItinerary = await retrieveAIResponse(tripId, 'itinerary');
+    // Retrieve the stored AI response from trip suggestions
+    const itinerarySuggestion = trip.aiSuggestions
+      .filter(s => s.type === 'itinerary')
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
     
-    if (!storedItinerary) {
+    if (!itinerarySuggestion) {
       return res.status(404).json({
         success: false,
         message: 'No stored AI response found for this trip'
       });
     }
     
-    // Parse the itinerary from the stored MongoDB document
+    // Parse the itinerary from the stored content
     try {
       
-      const parsedItinerary = parseStoredAIResponse(storedItinerary, trip.startDate);
+      const parsedItinerary = parseItineraryJSON(itinerarySuggestion.content, trip.startDate);
       
       if (parsedItinerary && parsedItinerary.length > 0) {
         
@@ -572,110 +496,7 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/generator/storage-stats
- * @desc    Get MongoDB storage statistics
- * @access  Private
- */
-router.get('/storage-stats', auth, async (req, res) => {
-  try {
-    const stats = await getStorageStats();
-    res.json({
-      success: true,
-      message: 'Storage statistics retrieved successfully',
-      stats
-    });
-  } catch (error) {
-    console.error('Error getting storage stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get storage statistics',
-      error: error.message
-    });
-  }
-});
 
-/**
- * @route   GET /api/generator/ai-responses/:tripId
- * @desc    List AI response records for a specific trip
- * @access  Private
- */
-router.get('/ai-responses/:tripId', auth, async (req, res) => {
-  try {
-    const { tripId } = req.params;
-    const { type } = req.query; // Optional filter by type
-    
-    // Verify trip exists and user owns it
-    const trip = await Trip.findById(tripId);
-    if (!trip) {
-      return res.status(404).json({ message: 'Trip not found' });
-    }
-    
-    if (trip.user.toString() !== req.userId.toString()) {
-      return res.status(403).json({ message: 'Not authorized to access this trip' });
-    }
-    
-    const responses = await listAIResponses(tripId, type);
-    
-    res.json({
-      success: true,
-      message: 'AI response records retrieved successfully',
-      tripId,
-      responses,
-      count: responses.length
-    });
-  } catch (error) {
-    console.error('Error listing AI responses:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to list AI response records',
-      error: error.message
-    });
-  }
-});
-
-/**
- * @route   GET /api/generator/ai-response/:tripId/:type
- * @desc    Get the latest AI response for a trip
- * @access  Private
- */
-router.get('/ai-response/:tripId/:type', auth, async (req, res) => {
-  try {
-    const { tripId, type } = req.params;
-    
-    // Verify trip exists and user owns it
-    const trip = await Trip.findById(tripId);
-    if (!trip) {
-      return res.status(404).json({ message: 'Trip not found' });
-    }
-    
-    if (trip.user.toString() !== req.userId.toString()) {
-      return res.status(403).json({ message: 'Not authorized to access this trip' });
-    }
-    
-    const storedResponse = await retrieveAIResponse(tripId, type);
-    
-    if (!storedResponse) {
-      return res.status(404).json({
-        success: false,
-        message: `No AI response found for trip ${tripId} type ${type}`
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'AI response retrieved successfully',
-      data: storedResponse
-    });
-  } catch (error) {
-    console.error('Error retrieving AI response:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve AI response',
-      error: error.message
-    });
-  }
-});
 
 
 

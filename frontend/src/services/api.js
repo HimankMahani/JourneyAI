@@ -177,25 +177,6 @@ export const tripService = {
     }
   },
 
-  getAIResponses: async (tripId, type = null) => {
-    try {
-      const url = type ? `/generator/ai-responses/${tripId}?type=${type}` : `/generator/ai-responses/${tripId}`;
-      const response = await api.get(url);
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  },
-
-  getAIResponse: async (tripId, type = 'itinerary') => {
-    try {
-      const response = await api.get(`/generator/ai-response/${tripId}/${type}`);
-      return response.data;
-    } catch (error) {
-      throw error.response ? error.response.data : new Error('Network Error');
-    }
-  },
-
   getPlacePhoto: async (placeName) => {
     try {
       const response = await api.get(`/generator/place-photo/${encodeURIComponent(placeName)}`);
