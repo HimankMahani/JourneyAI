@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Star, Calendar, ChevronRight, Filter, Loader2 } from 'lucide-react';
+import { Search, MapPin, Star, Calendar, ChevronRight, Filter, Loader2, TrendingUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useTripContext } from '../contexts/useTripContext';
 import { useAuth } from '../contexts/useAuth';
 import { toast } from 'sonner';
 import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
+import api from '../services/api';
 
 const destinations = [
   {
@@ -143,7 +144,7 @@ const activities = [
   'Beach', 'Adventure', 'Culture', 'Food', 'Nature', 'History', 'Romance', 'Photography', 'Wildlife', 'Relaxation'
 ];
 
-const DestinationCard = ({ destination }) => {
+const DestinationCard = ({ destination, showStats }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createTripFromDestination } = useTripContext();
@@ -163,10 +164,14 @@ const DestinationCard = ({ destination }) => {
       setIsCreating(true);
       
       // Create a trip from the destination
+      const priceString = destination.price.replace(/[₹,]/g, '');
+      const parsedBudget = parseInt(priceString);
+      const budget = isNaN(parsedBudget) ? 50000 : parsedBudget; // Default to 50k if parsing fails (e.g. "Variable")
+
       const tripData = {
         id: destination.id, // Add destination ID for pre-generated itinerary lookup
         destination: destination.name,
-        budget: parseInt(destination.price.replace(/[₹,]/g, '')),
+        budget: budget,
         activities: destination.activities,
         estimatedDuration: destination.duration,
         rating: destination.rating,
@@ -208,7 +213,13 @@ const DestinationCard = ({ destination }) => {
           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
           <span className="text-xs font-bold ml-1">{destination.rating}</span>
         </div>
-        {hasPreGeneratedItinerary && (
+        {showStats && destination.stats && (
+           <div className="absolute bottom-3 left-3 bg-purple-600/90 backdrop-blur-sm text-white rounded-full px-3 py-1 flex items-center shadow-lg border border-purple-400/30">
+             <TrendingUp className="h-3 w-3 mr-1" />
+             <span className="text-xs font-bold">{destination.stats}</span>
+           </div>
+        )}
+        {hasPreGeneratedItinerary && !showStats && (
           <div className="absolute top-3 left-3 bg-green-500 text-white rounded-full px-2 py-1 flex items-center">
             <span className="text-xs font-bold">Ready to Go!</span>
           </div>
@@ -261,6 +272,23 @@ const DestinationCard = ({ destination }) => {
 const Destinations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [popularDestinations, setPopularDestinations] = useState([]);
+  const [loadingPopular, setLoadingPopular] = useState(true);
+
+  useEffect(() => {
+    const fetchPopularDestinations = async () => {
+      try {
+        const response = await api.get('/trips/popular');
+        setPopularDestinations(response.data);
+      } catch (error) {
+        console.error('Error fetching popular destinations:', error);
+      } finally {
+        setLoadingPopular(false);
+      }
+    };
+
+    fetchPopularDestinations();
+  }, []);
 
   // Filter destinations based on search query
   const filteredDestinations = destinations.filter(destination =>
@@ -272,7 +300,6 @@ const Destinations = () => {
   );
 
   const featuredDestinations = filteredDestinations.slice(0, 8);
-  const moreDestinations = filteredDestinations.slice(8, 12);
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -371,15 +398,19 @@ const Destinations = () => {
         </div>
       </div>
 
-      {/* More Destinations Section */}
-      {moreDestinations.length > 0 && (
-        <div>
+      {/* Most Popular Destinations Section */}
+      {popularDestinations.length > 0 && (
+        <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">More Amazing Destinations</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Most Popular Destinations</h2>
+            <div className="flex items-center text-sm text-purple-600 font-medium bg-purple-50 px-3 py-1 rounded-full">
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Based on traveler plans
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {moreDestinations.map(destination => (
-              <DestinationCard key={destination.id} destination={destination} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {popularDestinations.map(destination => (
+              <DestinationCard key={destination.id} destination={destination} showStats={true} />
             ))}
           </div>
         </div>
