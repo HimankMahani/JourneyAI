@@ -132,6 +132,11 @@ const tripSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Indexes for performance optimization
+tripSchema.index({ user: 1, startDate: 1 }); // Optimize fetching user trips sorted by date
+tripSchema.index({ "destination.name": 1 }); // Optimize popular destinations aggregation
+tripSchema.index({ isPublic: 1 }); // Optimize filtering public trips
+
 const Trip = mongoose.model('Trip', tripSchema);
 
 export default Trip;
