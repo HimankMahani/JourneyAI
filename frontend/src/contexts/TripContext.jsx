@@ -60,8 +60,8 @@ export const TripProvider = ({ children }) => {
     try {
       setLoading(true);
       const updatedTrip = await tripService.updateTrip(tripId, tripData);
-      setTrips(prev => prev.map(trip => trip.id === tripId ? updatedTrip : trip));
-      if (currentTrip?.id === tripId) {
+      setTrips(prev => prev.map(trip => trip._id === tripId ? updatedTrip : trip));
+      if (currentTrip?._id === tripId) {
         setCurrentTrip(updatedTrip);
       }
       return { success: true, data: updatedTrip };

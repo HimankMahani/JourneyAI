@@ -120,7 +120,14 @@ const tripSchema = new mongoose.Schema({
     type: String,
     enum: ['ai', 'pre-generated', 'manual'],
     default: 'ai'
-  }
+  },
+  packingList: [{
+    name: String,
+    packed: {
+      type: Boolean,
+      default: false
+    }
+  }]
 }, {
   timestamps: true
 });

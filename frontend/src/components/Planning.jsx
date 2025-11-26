@@ -127,7 +127,7 @@ const getPreGeneratedItinerary = (destinationName) => {
 
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
-  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity } = useTripContext();
+  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity, updateTrip } = useTripContext();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
@@ -336,6 +336,19 @@ const Planning = () => {
     return false;
   };
 
+  const handlePackingListUpdate = async (newPackingList) => {
+    setPackingList(newPackingList); // Optimistic update
+    
+    if (currentTrip?._id) {
+      try {
+        await updateTrip(currentTrip._id, { packingList: newPackingList });
+      } catch (error) {
+        console.error('Failed to update packing list:', error);
+        toast.error('Failed to save packing list');
+      }
+    }
+  };
+
   const handleRegenerateItinerary = async () => {
     if (!currentTrip || !currentTrip._id) {
       toast.error("No trip selected to regenerate");
@@ -436,7 +449,10 @@ const Planning = () => {
 
           {/* Packing Tab */}
           {activeTab === 'packing' && (
-            <PackingTab packingList={packingList} />
+            <PackingTab 
+              packingList={packingList} 
+              onUpdate={handlePackingListUpdate}
+            />
           )}
 
           {/* Destination Info Tab */}

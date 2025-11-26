@@ -43,8 +43,17 @@ const normalizeToFlatList = (packingList) => {
   return [];
 };
 
-const PackingTab = ({ packingList = {} }) => {
+const PackingTab = ({ packingList, onUpdate }) => {
   const initialItems = useMemo(() => {
+    // If packingList is explicitly provided (even empty array), use it
+    if (Array.isArray(packingList)) {
+      return normalizeToFlatList(packingList);
+    }
+    // If packingList is null/undefined, use defaults
+    if (!packingList) {
+      return DEFAULT_ITEMS.map((n) => ({ name: n, packed: false }));
+    }
+    // If object, normalize it
     const normalized = normalizeToFlatList(packingList);
     return normalized.length > 0 ? normalized : DEFAULT_ITEMS.map((n) => ({ name: n, packed: false }));
   }, [packingList]);
@@ -57,22 +66,34 @@ const PackingTab = ({ packingList = {} }) => {
     setItems(initialItems);
   }, [initialItems]);
 
+  const notifyUpdate = (newItems) => {
+    if (onUpdate) {
+      onUpdate(newItems);
+    }
+  };
+
   const packedCount = items.filter((i) => i.packed).length;
   const progress = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0;
 
   const toggleItem = (index) => {
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, packed: !it.packed } : it)));
+    const newItems = items.map((it, i) => (i === index ? { ...it, packed: !it.packed } : it));
+    setItems(newItems);
+    notifyUpdate(newItems);
   };
 
   const addItem = () => {
     const name = newItem.trim();
     if (!name) return;
-    setItems((prev) => [...prev, { name, packed: false }]);
+    const newItems = [...items, { name, packed: false }];
+    setItems(newItems);
     setNewItem('');
+    notifyUpdate(newItems);
   };
 
   const removeItem = (index) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    const newItems = items.filter((_, i) => i !== index);
+    setItems(newItems);
+    notifyUpdate(newItems);
   };
 
   return (

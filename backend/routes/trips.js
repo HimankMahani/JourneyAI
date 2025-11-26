@@ -133,7 +133,8 @@ router.put('/:id', auth, async (req, res) => {
       endDate,
       destination,
       isPublic,
-      budget
+      budget,
+      packingList
     } = req.body;
     
     if (title) trip.title = title;
@@ -143,6 +144,7 @@ router.put('/:id', auth, async (req, res) => {
     if (destination) trip.destination = destination;
     if (isPublic !== undefined) trip.isPublic = isPublic;
     if (budget) trip.budget = budget;
+    if (packingList) trip.packingList = packingList;
     
     const updatedTrip = await trip.save();
     res.json(updatedTrip);
