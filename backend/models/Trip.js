@@ -104,7 +104,7 @@ const tripSchema = new mongoose.Schema({
     },
     type: {
       type: String,
-      enum: ['itinerary', 'activity', 'general', 'food', 'safety']
+      enum: ['itinerary', 'activity', 'general', 'food', 'safety', 'itinerary_modification']
     }
   }],
   travelers: {

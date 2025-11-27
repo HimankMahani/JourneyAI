@@ -291,3 +291,46 @@ export const generatePackingList = async (destination, startDate, endDate) => {
 
   return generateContent(prompt, { temperature: 0.5 });
 };
+
+/**
+ * Modify an existing itinerary based on user chat message
+ * @param {Object} currentItinerary - The current itinerary object
+ * @param {string} userMessage - The user's chat message/request
+ * @param {Object} tripDetails - Basic trip details (destination, dates, etc.)
+ * @returns {Promise<string>} - JSON response with text and optional modified itinerary
+ */
+export const modifyItineraryWithChat = async (currentItinerary, userMessage, tripDetails) => {
+  const { destination, startDate, endDate, budget } = tripDetails;
+  
+  const prompt = `You are a helpful travel assistant. The user wants to modify their trip to ${destination}.
+  
+  Current Itinerary JSON:
+  ${JSON.stringify(currentItinerary)}
+  
+  User Request: "${userMessage}"
+  
+  Trip Details:
+  - Dates: ${startDate} to ${endDate}
+  - Budget: ${budget}
+  
+  Instructions:
+  1. Analyze the user's request.
+  2. If the user is asking a general question, answer it in the "text" field.
+  3. If the user wants to modify the itinerary (add/remove/change activities, change times, swap days, etc.), modify the JSON accordingly and provide the FULL updated itinerary in the "itinerary" field.
+  4. If modifying, ensure the JSON structure remains consistent with the input.
+  5. Keep the "text" response concise and friendly.
+  
+  CRITICAL FORMATTING: Respond with ONLY a valid JSON object.
+  
+  JSON Structure Required:
+  {
+    "text": "Your response to the user...",
+    "itinerary": [ ...full updated itinerary array... ] // OR null if no changes needed
+  }
+  `;
+
+  return generateContent(prompt, { 
+    temperature: 0.7,
+    maxTokens: 8192 
+  });
+};

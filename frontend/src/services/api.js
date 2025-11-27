@@ -158,6 +158,18 @@ export const tripService = {
     }
   },
 
+  addItineraryActivity: async (tripId, { dayIndex, activity }) => {
+    try {
+      const response = await api.post(`/trips/${tripId}/itinerary/activity`, {
+        dayIndex,
+        activity
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
   // File-based operations
   reparseItinerary: async (tripId) => {
     try {
@@ -189,6 +201,15 @@ export const tripService = {
   getPlacePhotos: async (places) => {
     try {
       const response = await api.post('/generator/place-photos', { places });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
+  chatWithAI: async (tripId, message) => {
+    try {
+      const response = await api.post('/generator/chat', { tripId, message });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : new Error('Network Error');

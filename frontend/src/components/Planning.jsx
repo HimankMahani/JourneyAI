@@ -8,6 +8,7 @@ import TabNavigation from '@/components/planning/TabNavigation';
 import ItineraryTab from '@/components/planning/tabs/ItineraryTab';
 import PackingTab from '@/components/planning/tabs/PackingTab';
 import DestinationInfoTab from '@/components/planning/tabs/DestinationInfoTab';
+import ChatInterface from '@/components/planning/ChatInterface';
 import { TripGenerationLoader } from '@/components/ui/PlanningPageSkeleton';
 import { toast } from 'sonner';
 import { preGeneratedItineraries } from '@/data/preGeneratedItineraries';
@@ -127,7 +128,7 @@ const getPreGeneratedItinerary = (destinationName) => {
 
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
-  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity, updateTrip } = useTripContext();
+  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity, addItineraryActivity, updateTrip } = useTripContext();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
@@ -336,6 +337,25 @@ const Planning = () => {
     return false;
   };
 
+  const handleAddActivity = async (dayIndex, activity) => {
+    if (!currentTrip?._id) {
+      toast.error("Cannot add activity: No trip selected");
+      return false;
+    }
+
+    const response = await addItineraryActivity(currentTrip._id, dayIndex, activity);
+
+    if (response.success && response.trip) {
+      setTrip(normalizeTrip(response.trip));
+      setItinerary(normalizeItinerary(response.trip.itinerary));
+      toast.success("Activity added successfully!");
+      return true;
+    } else {
+      toast.error(response.error || "Failed to add activity");
+      return false;
+    }
+  };
+
   const handlePackingListUpdate = async (newPackingList) => {
     setPackingList(newPackingList); // Optimistic update
     
@@ -444,6 +464,7 @@ const Planning = () => {
               itinerary={itinerary}
               onToggleFavorite={handleToggleFavoriteActivity}
               onNotesChange={handleNotesChange}
+              onAddActivity={handleAddActivity}
             />
           )}
 
@@ -469,6 +490,9 @@ const Planning = () => {
       
       {/* Show loader when regenerating */}
       {isRegenerating && <TripGenerationLoader />}
+
+      {/* Chat Interface */}
+      {trip && trip._id && <ChatInterface tripId={trip._id} />}
     </div>
   );
 };

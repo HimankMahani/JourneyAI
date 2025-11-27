@@ -192,6 +192,52 @@ export const TripProvider = ({ children }) => {
     }
   }, [currentTrip]);
 
+  const addItineraryActivity = useCallback(async (tripId, dayIndex, activity) => {
+    try {
+      const response = await tripService.addItineraryActivity(tripId, {
+        dayIndex,
+        activity
+      });
+
+      const updatedTrip = response.trip || response.data || response;
+
+      if (updatedTrip) {
+        setTrips(prev => prev.map(trip => (trip._id === updatedTrip._id ? updatedTrip : trip)));
+        if (currentTrip?._id === updatedTrip._id) {
+          setCurrentTrip(updatedTrip);
+        }
+      }
+
+      return { success: true, trip: updatedTrip };
+    } catch (err) {
+      console.error('Error adding itinerary activity:', err);
+      return { success: false, error: err.message || 'Failed to add activity' };
+    }
+  }, [currentTrip]);
+
+  const chatWithAI = useCallback(async (tripId, message) => {
+    try {
+      const response = await tripService.chatWithAI(tripId, message);
+      
+      if (response.success) {
+        // If the AI modified the trip, update local state
+        if (response.trip) {
+          const updatedTrip = response.trip;
+          setTrips(prev => prev.map(trip => (trip._id === updatedTrip._id ? updatedTrip : trip)));
+          if (currentTrip?._id === updatedTrip._id) {
+            setCurrentTrip(updatedTrip);
+          }
+        }
+        return { success: true, text: response.text, trip: response.trip };
+      }
+      
+      return { success: false, error: 'Failed to get response from AI' };
+    } catch (err) {
+      console.error('Error chatting with AI:', err);
+      return { success: false, error: err.message || 'Failed to chat with AI' };
+    }
+  }, [currentTrip]);
+
   const getStorageStats = useCallback(async () => {
     try {
       const response = await tripService.getStorageStats();
@@ -308,7 +354,9 @@ export const TripProvider = ({ children }) => {
     reparseItinerary,
     getStorageStats,
     createTripFromDestination,
-    updateItineraryActivity
+    updateItineraryActivity,
+    addItineraryActivity,
+    chatWithAI
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

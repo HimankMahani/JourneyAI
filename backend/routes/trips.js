@@ -222,6 +222,56 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/trips/:id/itinerary/activity
+// @desc    Add a new activity to a specific day in the itinerary
+// @access  Private
+router.post('/:id/itinerary/activity', auth, async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    if (trip.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this trip' });
+    }
+
+    const dayIndex = Number(req.body.dayIndex);
+    const activity = req.body.activity;
+
+    if (Number.isNaN(dayIndex)) {
+      return res.status(400).json({ message: 'Valid dayIndex is required' });
+    }
+
+    if (!activity || typeof activity !== 'object') {
+      return res.status(400).json({ message: 'Valid activity object is required' });
+    }
+
+    if (!trip.itinerary || !Array.isArray(trip.itinerary) || !trip.itinerary[dayIndex]) {
+      return res.status(404).json({ message: 'Itinerary day not found' });
+    }
+
+    // Ensure activities array exists
+    if (!trip.itinerary[dayIndex].activities) {
+      trip.itinerary[dayIndex].activities = [];
+    }
+
+    // Add the new activity
+    trip.itinerary[dayIndex].activities.push(activity);
+
+    trip.markModified('itinerary');
+    const updatedTrip = await trip.save();
+
+    res.json({ success: true, trip: updatedTrip });
+  } catch (error) {
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // @route   PATCH /api/trips/:id/itinerary/activity
 // @desc    Update a specific activity within a trip's itinerary
 // @access  Private

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { auth } from '../middleware/auth.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
-import { generateTravelItinerary, generateLocalTips, generatePackingList } from '../services/ai.service.js';
+import { generateTravelItinerary, generateLocalTips, generatePackingList, modifyItineraryWithChat } from '../services/ai.service.js';
 import { 
   parseItineraryJSON, 
   validateItinerary, 
@@ -628,8 +628,93 @@ router.post('/place-photos', auth, async (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/generator/chat
+ * @desc    Chat with AI to modify itinerary
+ * @access  Private
+ */
+router.post('/chat', auth, async (req, res) => {
+  try {
+    const { tripId, message } = req.body;
 
+    if (!tripId || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Trip ID and message are required'
+      });
+    }
 
+    const trip = await Trip.findById(tripId);
 
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    if (trip.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to access this trip' });
+    }
+
+    // Call AI service
+    const aiResponseRaw = await modifyItineraryWithChat(
+      trip.itinerary,
+      message,
+      {
+        destination: trip.destination.name,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        budget: trip.budget?.amount || 'mid-range'
+      }
+    );
+
+    let aiResponse;
+    try {
+      // Clean up markdown if present
+      const cleanJson = aiResponseRaw.replace(/```json/g, '').replace(/```/g, '').trim();
+      aiResponse = JSON.parse(cleanJson);
+    } catch (e) {
+      console.error('Failed to parse AI chat response:', e);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to process AI response'
+      });
+    }
+
+    let updatedTrip = null;
+
+    // If itinerary was modified, update the trip
+    if (aiResponse.itinerary && Array.isArray(aiResponse.itinerary)) {
+      // Validate/Normalize the new itinerary
+      // We can reuse parseItineraryJSON logic if needed, but here we expect the AI to return the full structure
+      // Let's run it through normalizeItinerary just in case to ensure dates/structure are correct
+      const normalizedItinerary = normalizeItinerary(aiResponse.itinerary, trip.startDate);
+      
+      trip.itinerary = normalizedItinerary;
+      applyItineraryCostToBudget(trip, trip.itinerary);
+      
+      // Add to AI suggestions history
+      trip.aiSuggestions.push({
+        content: JSON.stringify(aiResponse.itinerary),
+        type: 'itinerary_modification',
+        prompt: message
+      });
+
+      updatedTrip = await trip.save();
+    }
+
+    res.json({
+      success: true,
+      text: aiResponse.text,
+      trip: updatedTrip // Will be null if no changes were made
+    });
+
+  } catch (error) {
+    console.error('Chat API error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process chat request',
+      error: error.message
+    });
+  }
+});
 
 export default router;
