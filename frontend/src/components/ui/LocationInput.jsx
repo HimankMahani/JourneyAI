@@ -8,7 +8,8 @@ const LocationInput = ({
   onChange, 
   placeholder, 
   icon,
-  className = ""
+  className = "",
+  disabled = false
 }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -31,6 +32,7 @@ const LocationInput = ({
   }, []);
 
   const handleInputChange = (e) => {
+    if (disabled) return;
     const inputValue = e.target.value;
     onChange(inputValue);
 
@@ -107,7 +109,7 @@ const LocationInput = ({
   return (
     <div className={`relative group ${className}`} ref={wrapperRef}>
       {label && (
-        <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors mb-3">
+        <label className={`text-sm font-semibold flex items-center text-gray-700 transition-colors mb-3 ${!disabled && 'group-hover:text-purple-600'}`}>
           {icon && (
             <div className={`p-2 rounded-lg mr-3 ${icon.className || ''}`}>
               {icon.component}
@@ -123,8 +125,13 @@ const LocationInput = ({
           placeholder={placeholder}
           value={value}
           onChange={handleInputChange}
-          onFocus={() => value.length > 1 && setShowSuggestions(true)}
-          className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300 pr-10"
+          onFocus={() => !disabled && value.length > 1 && setShowSuggestions(true)}
+          disabled={disabled}
+          className={`w-full border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-300 pr-10 ${
+            disabled 
+              ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
+              : 'focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20'
+          }`}
         />
         
         {isLoading && (
@@ -133,7 +140,7 @@ const LocationInput = ({
           </div>
         )}
         
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && suggestions.length > 0 && !disabled && (
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
             {suggestions.map((suggestion, index) => (
               <div

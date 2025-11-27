@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, MapPin, Sparkles, Zap, Star } from "lucide-react";
+import { Calendar, Users, MapPin, Sparkles, Zap, Star, Lock } from "lucide-react";
 import { TripGenerationLoader } from "./ui/PlanningPageSkeleton";
 import { useTripContext } from "@/contexts/useTripContext";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,7 @@ import LocationInput from "./ui/LocationInput";
 
 const TravelPlanning = () => {
   const { generateAIItinerary } = useTripContext();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [isPlanning, setIsPlanning] = useState(false);
@@ -38,10 +38,8 @@ const TravelPlanning = () => {
   }, [user]);
 
   const handlePlanTrip = async () => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      toast.error("You must be logged in to generate a trip");
+    if (!isAuthenticated) {
+      navigate('/login');
       return;
     }
 
@@ -97,6 +95,7 @@ const TravelPlanning = () => {
   };
 
   const toggleInterest = (interestName) => {
+    if (!isAuthenticated) return;
     setSelectedInterests(prev => 
       prev.includes(interestName) 
         ? prev.filter(name => name !== interestName)
@@ -105,6 +104,7 @@ const TravelPlanning = () => {
   };
 
   const handleInputChange = (field, value) => {
+    if (!isAuthenticated) return;
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -161,12 +161,20 @@ const TravelPlanning = () => {
               </div>
 
               <div className="p-10 relative">
+                {!isAuthenticated && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center text-blue-700">
+                    <Lock className="w-5 h-5 mr-3" />
+                    <span className="font-medium">Please log in to start planning your trip.</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
                   <LocationInput
                     label="From"
                     placeholder="Your starting location"
                     value={formData.from}
                     onChange={(value) => handleInputChange('from', value)}
+                    disabled={!isAuthenticated}
                     className="space-y-3"
                     icon={{
                       component: <MapPin className="h-4 w-4 text-white" />,
@@ -179,6 +187,7 @@ const TravelPlanning = () => {
                     placeholder="Where do you want to go?"
                     value={formData.destination}
                     onChange={(value) => handleInputChange('destination', value)}
+                    disabled={!isAuthenticated}
                     className="space-y-3"
                     icon={{
                       component: <MapPin className="h-4 w-4 text-white" />,
@@ -187,7 +196,7 @@ const TravelPlanning = () => {
                   />
 
                   <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
+                    <label className={`text-sm font-semibold flex items-center text-gray-700 transition-colors ${!isAuthenticated ? '' : 'group-hover:text-purple-600'}`}>
                       <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg mr-3">
                         <Calendar className="h-4 w-4 text-white" />
                       </div>
@@ -197,12 +206,17 @@ const TravelPlanning = () => {
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => handleInputChange('startDate', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
+                      disabled={!isAuthenticated}
+                      className={`w-full border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-300 ${
+                        !isAuthenticated 
+                          ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
+                          : 'focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20'
+                      }`}
                     />
                   </div>
 
                   <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
+                    <label className={`text-sm font-semibold flex items-center text-gray-700 transition-colors ${!isAuthenticated ? '' : 'group-hover:text-purple-600'}`}>
                       <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg mr-3">
                         <Calendar className="h-4 w-4 text-white" />
                       </div>
@@ -212,12 +226,17 @@ const TravelPlanning = () => {
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange('endDate', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
+                      disabled={!isAuthenticated}
+                      className={`w-full border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-300 ${
+                        !isAuthenticated 
+                          ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
+                          : 'focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20'
+                      }`}
                     />
                   </div>
 
                   <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
+                    <label className={`text-sm font-semibold flex items-center text-gray-700 transition-colors ${!isAuthenticated ? '' : 'group-hover:text-purple-600'}`}>
                       <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-lg mr-3">
                         <Users className="h-4 w-4 text-white" />
                       </div>
@@ -226,7 +245,12 @@ const TravelPlanning = () => {
                     <select
                       value={formData.travelers}
                       onChange={(e) => handleInputChange('travelers', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
+                      disabled={!isAuthenticated}
+                      className={`w-full border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-300 ${
+                        !isAuthenticated 
+                          ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
+                          : 'focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20'
+                      }`}
                     >
                       <option value="">How many?</option>
                       <option value="1">1 Person</option>
@@ -237,7 +261,7 @@ const TravelPlanning = () => {
                   </div>
 
                   <div className="space-y-3 group">
-                    <label className="text-sm font-semibold flex items-center text-gray-700 group-hover:text-purple-600 transition-colors">
+                    <label className={`text-sm font-semibold flex items-center text-gray-700 transition-colors ${!isAuthenticated ? '' : 'group-hover:text-purple-600'}`}>
                       <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-2 rounded-lg mr-3">
                         <Star className="h-4 w-4 text-white" />
                       </div>
@@ -246,7 +270,12 @@ const TravelPlanning = () => {
                     <select
                       value={formData.budget}
                       onChange={(e) => handleInputChange('budget', e.target.value)}
-                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 rounded-xl py-3 px-4 transition-all duration-300"
+                      disabled={!isAuthenticated}
+                      className={`w-full border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-300 ${
+                        !isAuthenticated 
+                          ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
+                          : 'focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20'
+                      }`}
                     >
                       <option value="">Select budget</option>
                       <option value="economy">Economy</option>
@@ -266,10 +295,13 @@ const TravelPlanning = () => {
                       <Button
                         key={interest.name}
                         onClick={() => toggleInterest(interest.name)}
-                        className={`rounded-full px-6 py-2 transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-                          selectedInterests.includes(interest.name)
-                            ? `${interest.color} text-white`
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        disabled={!isAuthenticated}
+                        className={`rounded-full px-6 py-2 transition-all duration-300 ${
+                          !isAuthenticated 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : selectedInterests.includes(interest.name)
+                              ? `${interest.color} text-white hover:scale-105 hover:shadow-lg`
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105 hover:shadow-lg'
                         }`}
                       >
                         {interest.name}
@@ -281,14 +313,27 @@ const TravelPlanning = () => {
                 <Button
                   onClick={handlePlanTrip}
                   disabled={isPlanning}
-                  className="w-full bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white py-6 text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-[1.02] relative overflow-hidden group"
+                  className={`w-full py-6 text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-[1.02] relative overflow-hidden group ${
+                    !isAuthenticated 
+                      ? 'bg-gray-800 hover:bg-gray-900 text-white' 
+                      : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white'
+                  }`}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <div className="flex items-center relative z-10">
-                    <Zap className="mr-3 h-6 w-6" />
-                    Generate AI Itinerary
-                    <Sparkles className="ml-3 h-6 w-6" />
-                  </div>
+                  {!isAuthenticated ? (
+                    <div className="flex items-center justify-center relative z-10">
+                      <Lock className="mr-3 h-6 w-6" />
+                      Login to Plan Trip
+                    </div>
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                      <div className="flex items-center justify-center relative z-10">
+                        <Zap className="mr-3 h-6 w-6" />
+                        Generate AI Itinerary
+                        <Sparkles className="ml-3 h-6 w-6" />
+                      </div>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
