@@ -94,7 +94,7 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating, onDownloadPDF, on
   };
 
   return (
-    <Card className="border-0 shadow-2xl overflow-hidden w-full">
+    <Card className="border-0 shadow-2xl w-full">
       <CardContent className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
           <div className="space-y-3 sm:space-y-4 flex-1 min-w-0">
