@@ -496,6 +496,60 @@ const Planning = () => {
     }
   };
 
+  const handleDownloadPDF = () => {
+    window.print();
+  };
+
+  const handleDownloadCSV = () => {
+    if (!itinerary || !Array.isArray(itinerary)) {
+      toast.error("No itinerary to download");
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ['Day', 'Date', 'Time', 'Activity', 'Type', 'Location', 'Cost', 'Notes'];
+    
+    // Build CSV rows
+    const rows = [];
+    
+    itinerary.forEach((day, dayIndex) => {
+      const dayLabel = `Day ${day.day || dayIndex + 1}`;
+      const dateLabel = day.date || '';
+      
+      if (day.activities && Array.isArray(day.activities)) {
+        day.activities.forEach(activity => {
+          rows.push([
+            dayLabel,
+            dateLabel,
+            activity.time || '',
+            `"${(activity.title || activity.activity || '').replace(/"/g, '""')}"`, // Escape quotes
+            activity.type || '',
+            `"${(typeof activity.location === 'object' ? activity.location.name : activity.location || '').replace(/"/g, '""')}"`,
+            activity.cost || 0,
+            `"${(activity.notes || '').replace(/"/g, '""')}"`
+          ]);
+        });
+      }
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `trip_itinerary_${trip?.destination?.name || 'plan'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (isLoading || (tripId && !trip)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
@@ -515,6 +569,8 @@ const Planning = () => {
           trip={trip || mockTrip} 
           onRegenerateClick={handleRegenerateItinerary}
           isRegenerating={isRegenerating}
+          onDownloadPDF={handleDownloadPDF}
+          onDownloadCSV={handleDownloadCSV}
         />
 
         {/* Tabs Section */}

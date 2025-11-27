@@ -95,3 +95,49 @@ body {
     @apply text-gray-600 hover:text-gray-900 hover:bg-gray-50;
   }
 }
+
+@media print {
+  /* Hide buttons, navigation, and other non-essential elements */
+  button, 
+  nav, 
+  .no-print,
+  [role="button"],
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* Ensure the main content is visible and takes full width */
+  body, #root, .min-h-screen {
+    background: white !important;
+    color: black !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure cards look good in print */
+  .card, .shadow-lg, .shadow-2xl {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+
+  /* Ensure text is readable */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Specific fixes for layout */
+  .max-w-7xl {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  
+  /* Hide chat interface */
+  .fixed.bottom-6.right-6 {
+    display: none !important;
+  }
+}

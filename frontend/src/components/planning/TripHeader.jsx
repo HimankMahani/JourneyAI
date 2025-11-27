@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Calendar, Clock, Star, Download } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Star, Download, FileText, FileSpreadsheet } from 'lucide-react';
 
-const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
+const TripHeader = ({ trip, onRegenerateClick, isRegenerating, onDownloadPDF, onDownloadCSV }) => {
+  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
+
   // Helper function to format dates
   const formatDateRange = (startDate, endDate) => {
     if (!startDate || !endDate) return 'Dates not set';
@@ -123,7 +125,7 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
               <div className="text-2xl sm:text-3xl lg:text-4xl font-bold whitespace-nowrap">{formatBudget(trip.budget)}</div>
               <div className="text-green-100 font-medium">Total Budget</div>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center lg:justify-end">
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-end relative">
               <Button 
                 size="sm" 
                 variant="outline"
@@ -133,6 +135,49 @@ const TripHeader = ({ trip, onRegenerateClick, isRegenerating }) => {
                 <Sparkles className="h-4 w-4 mr-2" />
                 {isRegenerating ? 'Regenerating...' : 'Regenerate'}
               </Button>
+
+              <div className="relative">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                
+                {isDownloadMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsDownloadMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-100 py-1 animate-in fade-in zoom-in-95 duration-200">
+                      <button
+                        onClick={() => {
+                          if (onDownloadCSV) onDownloadCSV();
+                          setIsDownloadMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                        Download CSV
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (onDownloadPDF) onDownloadPDF();
+                          setIsDownloadMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-red-600" />
+                        Print / Save PDF
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

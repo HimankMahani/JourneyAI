@@ -19,16 +19,38 @@ const allowedOrigins = [
   // Explicit beta URL to avoid env misconfig
   'https://journey-ai-beta.vercel.app',
   // Local dev (Vite default)
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'http://localhost:3000'
 ].filter(Boolean);
 
 const corsOptions = {
   origin(origin, callback) {
-    // allow non-browser requests (no Origin) and whitelisted origins
-    if (!origin || allowedOrigins.includes(origin)) {
+    // allow non-browser requests (no Origin)
+    if (!origin) {
       return callback(null, true);
     }
-    return callback(new Error('Not allowed by CORS'));
+
+    // Check if origin is explicitly allowed
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Dynamic check for Vercel preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Dynamic check for Render deployments (if frontend is also on Render)
+    if (origin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
+
+    // Log the blocked origin for debugging
+    console.log('Blocked by CORS:', origin);
+    
+    // For now, during development/deployment issues, we can be permissive
+    // or return the error. Let's return the error but with the origin info.
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
