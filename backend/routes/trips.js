@@ -306,7 +306,8 @@ router.patch('/:id/itinerary/activity', auth, async (req, res) => {
     }
 
     const activity = day.activities[activityIndex];
-    const allowedFields = ['isFavorited', 'notes'];
+    // Allow updating all activity fields
+    const allowedFields = ['isFavorited', 'notes', 'title', 'time', 'location', 'description', 'cost', 'type', 'duration'];
 
     let modified = false;
     allowedFields.forEach((field) => {
@@ -315,6 +316,10 @@ router.patch('/:id/itinerary/activity', auth, async (req, res) => {
           activity[field] = Boolean(updates[field]);
         } else if (field === 'notes') {
           activity[field] = typeof updates[field] === 'string' ? updates[field].trim() : '';
+        } else if (field === 'cost') {
+          activity[field] = Number(updates[field]);
+        } else {
+          activity[field] = updates[field];
         }
         modified = true;
       }
@@ -323,6 +328,53 @@ router.patch('/:id/itinerary/activity', auth, async (req, res) => {
     if (!modified) {
       return res.status(400).json({ message: 'No valid fields provided for update' });
     }
+
+    trip.markModified('itinerary');
+    const updatedTrip = await trip.save();
+
+    res.json({ success: true, trip: updatedTrip });
+  } catch (error) {
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/trips/:id/itinerary/activity
+// @desc    Delete an activity from a specific day in the itinerary
+// @access  Private
+router.delete('/:id/itinerary/activity', auth, async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    if (trip.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this trip' });
+    }
+
+    const dayIndex = Number(req.body.dayIndex);
+    const activityIndex = Number(req.body.activityIndex);
+
+    if (Number.isNaN(dayIndex) || Number.isNaN(activityIndex)) {
+      return res.status(400).json({ message: 'Valid dayIndex and activityIndex are required' });
+    }
+
+    if (!trip.itinerary || !Array.isArray(trip.itinerary) || !trip.itinerary[dayIndex]) {
+      return res.status(404).json({ message: 'Itinerary day not found' });
+    }
+
+    const day = trip.itinerary[dayIndex];
+
+    if (!day.activities || !Array.isArray(day.activities) || !day.activities[activityIndex]) {
+      return res.status(404).json({ message: 'Activity not found' });
+    }
+
+    // Remove the activity
+    day.activities.splice(activityIndex, 1);
 
     trip.markModified('itinerary');
     const updatedTrip = await trip.save();

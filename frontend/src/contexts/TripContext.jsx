@@ -215,6 +215,29 @@ export const TripProvider = ({ children }) => {
     }
   }, [currentTrip]);
 
+  const deleteItineraryActivity = useCallback(async (tripId, dayIndex, activityIndex) => {
+    try {
+      const response = await tripService.deleteItineraryActivity(tripId, {
+        dayIndex,
+        activityIndex
+      });
+
+      const updatedTrip = response.trip || response.data || response;
+
+      if (updatedTrip) {
+        setTrips(prev => prev.map(trip => (trip._id === updatedTrip._id ? updatedTrip : trip)));
+        if (currentTrip?._id === updatedTrip._id) {
+          setCurrentTrip(updatedTrip);
+        }
+      }
+
+      return { success: true, trip: updatedTrip };
+    } catch (err) {
+      console.error('Error deleting itinerary activity:', err);
+      return { success: false, error: err.message || 'Failed to delete activity' };
+    }
+  }, [currentTrip]);
+
   const chatWithAI = useCallback(async (tripId, message) => {
     try {
       const response = await tripService.chatWithAI(tripId, message);
@@ -356,6 +379,7 @@ export const TripProvider = ({ children }) => {
     createTripFromDestination,
     updateItineraryActivity,
     addItineraryActivity,
+    deleteItineraryActivity,
     chatWithAI
   };
 

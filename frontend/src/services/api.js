@@ -170,6 +170,18 @@ export const tripService = {
     }
   },
 
+  deleteItineraryActivity: async (tripId, { dayIndex, activityIndex }) => {
+    try {
+      // Use data property for DELETE body in axios
+      const response = await api.delete(`/trips/${tripId}/itinerary/activity`, {
+        data: { dayIndex, activityIndex }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network Error');
+    }
+  },
+
   // File-based operations
   reparseItinerary: async (tripId) => {
     try {

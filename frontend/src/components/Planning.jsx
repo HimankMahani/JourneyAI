@@ -128,7 +128,15 @@ const getPreGeneratedItinerary = (destinationName) => {
 
 const Planning = () => {
   const { tripId } = useParams(); // Get trip ID from URL
-  const { currentTrip, fetchTripById, regenerateTripItinerary, updateItineraryActivity, addItineraryActivity, updateTrip } = useTripContext();
+  const { 
+    currentTrip, 
+    fetchTripById, 
+    regenerateTripItinerary, 
+    updateItineraryActivity, 
+    addItineraryActivity, 
+    deleteItineraryActivity,
+    updateTrip 
+  } = useTripContext();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerary');
@@ -356,6 +364,64 @@ const Planning = () => {
     }
   };
 
+  const handleEditActivity = async (dayIndex, activityIndex, updatedActivity) => {
+    if (!currentTrip?._id) {
+      toast.error("Cannot edit activity: No trip selected");
+      return false;
+    }
+
+    // Optimistic update
+    applyItineraryChanges(dayIndex, activityIndex, updatedActivity);
+
+    const response = await updateItineraryActivity(currentTrip._id, dayIndex, activityIndex, updatedActivity);
+
+    if (response.success && response.trip) {
+      setTrip(normalizeTrip(response.trip));
+      setItinerary(normalizeItinerary(response.trip.itinerary));
+      toast.success("Activity updated successfully!");
+      return true;
+    } else {
+      // Revert changes if failed (this is a bit complex with current implementation, 
+      // but the error toast will alert the user)
+      toast.error(response.error || "Failed to update activity");
+      // Ideally we would revert the optimistic update here
+      return false;
+    }
+  };
+
+  const handleDeleteActivity = async (dayIndex, activityIndex) => {
+    if (!currentTrip?._id) {
+      toast.error("Cannot delete activity: No trip selected");
+      return false;
+    }
+
+    // Optimistic update - remove activity from local state
+    setItinerary(prevItinerary => {
+      if (!prevItinerary) return prevItinerary;
+      const updatedItinerary = prevItinerary.map((day, idx) => {
+        if (idx !== dayIndex) return day;
+        return {
+          ...day,
+          activities: day.activities.filter((_, actIdx) => actIdx !== activityIndex)
+        };
+      });
+      return updatedItinerary;
+    });
+
+    const response = await deleteItineraryActivity(currentTrip._id, dayIndex, activityIndex);
+
+    if (response.success && response.trip) {
+      setTrip(normalizeTrip(response.trip));
+      setItinerary(normalizeItinerary(response.trip.itinerary));
+      toast.success("Activity deleted successfully!");
+      return true;
+    } else {
+      toast.error(response.error || "Failed to delete activity");
+      // Ideally we would revert the optimistic update here
+      return false;
+    }
+  };
+
   const handlePackingListUpdate = async (newPackingList) => {
     setPackingList(newPackingList); // Optimistic update
     
@@ -465,6 +531,8 @@ const Planning = () => {
               onToggleFavorite={handleToggleFavoriteActivity}
               onNotesChange={handleNotesChange}
               onAddActivity={handleAddActivity}
+              onEditActivity={handleEditActivity}
+              onDeleteActivity={handleDeleteActivity}
             />
           )}
 

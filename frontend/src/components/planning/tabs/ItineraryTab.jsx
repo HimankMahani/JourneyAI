@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import ActivityCard from '../ActivityCard';
 import AddActivityModal from '../AddActivityModal';
+import EditActivityModal from '../EditActivityModal';
 
 // Replace imported icons with inline SVG components
 const CalendarIcon = () => (
@@ -29,19 +30,45 @@ const ItineraryTab = ({
   onChangeRequest,
   onToggleFavorite,
   onNotesChange,
-  onAddActivity
+  onAddActivity,
+  onEditActivity,
+  onDeleteActivity
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+  const [selectedActivityIndex, setSelectedActivityIndex] = useState(null);
+  const [activityToEdit, setActivityToEdit] = useState(null);
 
   const openAddModal = (dayIndex) => {
     setSelectedDayIndex(dayIndex);
-    setIsModalOpen(true);
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (dayIndex, activityIndex, activity) => {
+    setSelectedDayIndex(dayIndex);
+    setSelectedActivityIndex(activityIndex);
+    setActivityToEdit(activity);
+    setIsEditModalOpen(true);
   };
 
   const handleAddActivity = (dayIndex, activity) => {
     if (onAddActivity) {
       onAddActivity(dayIndex, activity);
+    }
+  };
+
+  const handleEditActivity = (updatedActivity) => {
+    if (onEditActivity) {
+      onEditActivity(selectedDayIndex, selectedActivityIndex, updatedActivity);
+    }
+  };
+
+  const handleDeleteActivity = (dayIndex, activityIndex) => {
+    if (onDeleteActivity) {
+      if (window.confirm('Are you sure you want to delete this activity?')) {
+        onDeleteActivity(dayIndex, activityIndex);
+      }
     }
   };
 
@@ -118,6 +145,8 @@ const ItineraryTab = ({
                     onChangeRequest={onChangeRequest ? buildChangeRequestHandler(dayIndex, index) : undefined}
                     onToggleFavorite={onToggleFavorite ? buildFavoriteHandler(dayIndex, index) : undefined}
                     onNotesChange={onNotesChange ? buildNotesHandler(dayIndex, index) : undefined}
+                    onEdit={() => openEditModal(dayIndex, index, activity)}
+                    onDelete={() => handleDeleteActivity(dayIndex, index)}
                   />
                 </div>
               ))}
@@ -146,10 +175,17 @@ const ItineraryTab = ({
       ))}
 
       <AddActivityModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddActivity}
         dayIndex={selectedDayIndex}
+      />
+
+      <EditActivityModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleEditActivity}
+        activity={activityToEdit}
       />
     </div>
   );

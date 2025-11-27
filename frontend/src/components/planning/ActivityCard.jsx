@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Plane, Hotel, Utensils, Camera, Heart, StickyNote
+  Clock, MapPin, Plane, Hotel, Utensils, Camera, Heart, StickyNote, Edit2, Trash2
 } from 'lucide-react';
 
 const ActivityCard = ({ 
   activity = {}, 
   onChangeRequest,
   onToggleFavorite,
-  onNotesChange
+  onNotesChange,
+  onEdit,
+  onDelete
 }) => {
   const [isFavorited, setIsFavorited] = useState(activity?.isFavorited || false);
   const [showNotes, setShowNotes] = useState(false);
@@ -93,7 +95,33 @@ const ActivityCard = ({
   }
 
   return (
-    <div className="p-6 bg-gradient-to-r from-gray-50/80 to-blue-50/80 rounded-2xl border">
+    <div className="p-6 bg-gradient-to-r from-gray-50/80 to-blue-50/80 rounded-2xl border group relative">
+      {/* Edit/Delete Actions - Visible on Hover */}
+      <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onEdit && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onEdit}
+            className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+            title="Edit Activity"
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onDelete}
+            className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+            title="Delete Activity"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
       <div className="flex items-start space-x-6">
         <div className="bg-white p-4 rounded-2xl shadow-lg">
           {getActivityIcon(activityType)}
