@@ -114,3 +114,4 @@ npm-debug.log*
 .vercel
 .netlify
 .project_docs
+backend/scripts/resetTrips.js

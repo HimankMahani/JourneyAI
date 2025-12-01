@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "test:apis": "node test-apis.js",
     "render-start": "NODE_ENV=production node server.js",
-    "test:server": "node test-server.js"
+    "test:server": "node test-server.js",
+    "reset:trips": "node scripts/resetTrips.js"
   },
   "engines": {
     "node": ">=18"
