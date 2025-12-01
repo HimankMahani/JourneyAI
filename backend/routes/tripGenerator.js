@@ -553,7 +553,7 @@ router.post('/reparse-itinerary/:id', auth, async (req, res) => {
 
 /**
  * @route   GET /api/generator/place-photo/:placeName
- * @desc    Get place photo using Google Places API
+ * @desc    Get place photo using Unsplash API
  * @access  Private
  */
 router.get('/place-photo/:placeName', auth, async (req, res) => {
