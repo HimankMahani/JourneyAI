@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { tripService } from '../services/api';
 
-// In-memory cache for place photos
-const photoCache = new Map();
-
 export const usePlacePhoto = (placeName) => {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -15,14 +12,6 @@ export const usePlacePhoto = (placeName) => {
       return;
     }
 
-    const cacheKey = place.toLowerCase().trim();
-    
-    // Check cache first
-    if (photoCache.has(cacheKey)) {
-      setPhotoUrl(photoCache.get(cacheKey));
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -30,12 +19,10 @@ export const usePlacePhoto = (placeName) => {
       const response = await tripService.getPlacePhoto(place);
       
       if (response.success && response.photoUrl) {
-        photoCache.set(cacheKey, response.photoUrl);
         setPhotoUrl(response.photoUrl);
       } else {
         // Use high-quality fallback
         const fallbackUrl = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-        photoCache.set(cacheKey, fallbackUrl);
         setPhotoUrl(fallbackUrl);
       }
     } catch (err) {
@@ -43,7 +30,6 @@ export const usePlacePhoto = (placeName) => {
       
       // Use high-quality fallback on error
       const fallbackUrl = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-      photoCache.set(cacheKey, fallbackUrl);
       setPhotoUrl(fallbackUrl);
     } finally {
       setLoading(false);
@@ -71,38 +57,19 @@ export const usePlacePhotos = (places) => {
     setError(null);
 
     try {
-      let newPhotos = {};
-
-      // Get cached photos first
-      placeList.forEach(place => {
-        const cacheKey = place.toLowerCase().trim();
-        if (photoCache.has(cacheKey)) {
-          newPhotos[place] = photoCache.get(cacheKey);
-        }
-      });
-
-      // Fetch uncached photos
-      const placesToFetch = placeList.filter(place => !newPhotos[place]);
+      const response = await tripService.getPlacePhotos(placeList);
       
-      if (placesToFetch.length > 0) {
-        const response = await tripService.getPlacePhotos(placesToFetch);
-        
-        if (response.success && response.photos) {
-          response.photos.forEach(({ placeName, photoUrl }) => {
-            const cacheKey = placeName.toLowerCase().trim();
-            photoCache.set(cacheKey, photoUrl);
-            newPhotos[placeName] = photoUrl;
-          });
-        }
+      let newPhotos = {};
+      if (response.success && response.photos) {
+        response.photos.forEach(({ placeName, photoUrl }) => {
+          newPhotos[placeName] = photoUrl;
+        });
       }
 
       // Set high-quality fallbacks for any missing photos
       placeList.forEach(place => {
         if (!newPhotos[place]) {
-          const fallbackUrl = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-          const cacheKey = place.toLowerCase().trim();
-          photoCache.set(cacheKey, fallbackUrl);
-          newPhotos[place] = fallbackUrl;
+          newPhotos[place] = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
         }
       });
 

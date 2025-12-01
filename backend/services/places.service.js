@@ -232,44 +232,10 @@ export const getRandomTravelImage = () => {
 };
 
 /**
- * Cache for place photos to avoid repeated API calls
- */
-const photoCache = new Map();
-
-/**
- * Clear the photo cache (useful for testing or when images need to be refreshed)
- */
-export const clearPhotoCache = () => {
-  photoCache.clear();
-};
-
-/**
- * Get place photo with caching
+ * Get place photo (formerly cached)
  * @param {string} placeName - Name of the place
  * @returns {Promise<string>} - Photo URL or fallback image
  */
 export const getCachedPlacePhoto = async (placeName) => {
-  if (!placeName) {
-    return getRandomTravelImage();
-  }
-
-  const cacheKey = placeName.toLowerCase().trim();
-  
-  // Check cache first
-  if (photoCache.has(cacheKey)) {
-    return photoCache.get(cacheKey);
-  }
-
-  try {
-    const imageUrl = await getDestinationImage(placeName);
-    photoCache.set(cacheKey, imageUrl);
-    return imageUrl;
-  } catch (error) {
-    console.error(`Error fetching photo for ${placeName}:`, error);
-    
-    // Fallback to random travel image
-    const fallbackUrl = await getRandomTravelImage();
-    photoCache.set(cacheKey, fallbackUrl);
-    return fallbackUrl;
-  }
+  return getDestinationImage(placeName);
 };
